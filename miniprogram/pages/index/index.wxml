@@ -1,0 +1,54 @@
+<!--index.wxml-->
+<scroll-view class="scrollarea" scroll-y type="list">
+  <view style="display: flex; flex-direction: column; align-items: center; position: relative;">
+    <image src="/images/bg.png" mode="aspectFill" style="position: absolute; width: 100%;"/>
+    <image src="/images/head.png" mode="aspectFit" style="position: absolute; height: 320rpx; top: 30rpx; right:-140rpx"/>
+
+    <text style="width: 630rpx; font-size: 36rpx; font-weight: 500; color: rgba(0,0,0,0.9); margin-top: 86.4rpx; margin-bottom: 21.6rpx;">一套代码多端运行</text>
+    <text style="width: 630rpx; font-size: 27rpx; font-weight: 400; color: rgba(0,0,0,0.55); margin-bottom: 10.8rpx;">可使用小程序技术和工具</text>
+    <p style="width: 630rpx; font-size: 27rpx; font-weight: 400; color: rgba(0,0,0,0.55);">构建 iOS/Android 应用</p>
+    <view style="width: 630rpx; z-index: 10;">
+      <div catch:tap="toCases" style="font-size: 25.2rpx; font-weight: 500; color: rgba(0,0,0,0.9); margin-top: 28.8rpx; margin-bottom: 100.8rpx; background-color: rgba(0,0,0,0.05); width: 144rpx; height: 57.6rpx; display: flex; justify-content: center; align-items: center; border-radius: 10.8rpx;">
+        查看案例
+      </div>
+    </view>
+
+
+    <view style="width: 687.6rpx; padding: 28.8rpx; box-sizing: border-box; border-radius:21.6rpx; background-color: white;">
+      <text style="font-weight: 500; color: rgba(0,0,0,0.9); font-size: 27rpx;">框架特性</text>
+      <view style="font-weight: 400; color: rgba(0,0,0,0.3); font-size: 27rpx; margin-top: 14.5rpx; margin-bottom: 50rpx;">多端模式开发App，不影响小程序开发</view>
+      <view style="display: flex; align-items: center;">
+        <image src="/images/Icon1.png" mode="aspectFit" style="width: 43.2rpx; height: 43.2rpx; margin-right: 21.6rpx;" />
+        <text style="font-weight: 400; color: rgba(0,0,0,0.9); font-size: 27rpx;">开发流程一致，0门槛可上手。</text>
+      </view>
+      <view style="display: flex; align-items: center; margin-bottom: 43.2rpx; margin-top: 43.2rpx;">
+        <image src="/images/Icon2.png" mode="aspectFit" style="width: 43.2rpx; height: 43.2rpx; margin-right: 21.6rpx;" />
+        <text style="font-weight: 400; color: rgba(0,0,0,0.9); font-size: 27rpx;">支持条件编译，无缝跨平台。</text>
+      </view>
+      <view style="display: flex; align-items: center; margin-bottom: 21.6rpx;">
+        <image src="/images/Icon3.png" mode="aspectFit" style="width: 43.2rpx; height: 43.2rpx; margin-right: 21.6rpx;" />
+        <text style="font-weight: 400; color: rgba(0,0,0,0.9); font-size: 27rpx;">支持 Skyline，可媲美原生。</text>
+      </view>
+    </view>
+
+    <view style="width: 687.6rpx; padding: 28.8rpx; box-sizing: border-box; border-radius:21.6rpx; background-color: white; margin-top: 29rpx; margin-bottom: 100rpx;">
+      <text style="font-weight: 500; color: rgba(0,0,0,0.9); font-size: 27rpx;">应用场景</text>
+      <view style="margin-bottom: 50rpx;"></view>
+      <view style="display: flex; align-items: center;">
+        <image src="/images/Icon4.png" mode="aspectFit" style="width: 43.2rpx; height: 43.2rpx; margin-right: 21.6rpx;" />
+        <text style="font-weight: 400; color: rgba(0,0,0,0.9); font-size: 27rpx;">双端看剧更便捷</text>
+      </view>
+      <view style="display: flex; align-items: center; margin-bottom: 43.2rpx; margin-top: 43.2rpx;">
+        <image src="/images/Icon5.png" mode="aspectFit" style="width: 43.2rpx; height: 43.2rpx; margin-right: 21.6rpx;" />
+        <text style="font-weight: 400; color: rgba(0,0,0,0.9); font-size: 27rpx;">双端学习更高效</text>
+      </view>
+      <view style="display: flex; align-items: center; margin-bottom: 21.6rpx;">
+        <image src="/images/Icon6.png" mode="aspectFit" style="width: 43.2rpx; height: 43.2rpx; margin-right: 21.6rpx;" />
+        <text style="font-weight: 400; color: rgba(0,0,0,0.9); font-size: 27rpx;">双端用工具更顺畅</text>
+      </view>
+    </view>
+
+
+  </view>
+
+</scroll-view>

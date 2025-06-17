@@ -1,0 +1,12 @@
+/* pages/contact/contact.wxss */
+page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(250,250,250,1); 
+}
+
+.scrollarea {
+  flex: 1;
+  overflow-y: scroll;
+}

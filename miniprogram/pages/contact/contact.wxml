@@ -1,0 +1,14 @@
+<!--pages/contact/contact.wxml-->
+<scroll-view class="scrollarea" scroll-y type="list">
+  <view style="display: flex; justify-content: center; position: relative;">
+    <view style="width: 100%; height: 310rpx; background: linear-gradient(to bottom, rgb(255, 255, 255, 0.35), rgb(255, 255, 255, 0)); position: absolute;">
+    </view>
+    <view style="display: flex; flex-direction: column; background-color: rgba(255,255,255,1); margin-top: 216rpx; align-items: center; width: 634rpx; padding: 72.44rpx; box-sizing: border-box; border-radius: 14.5rpx; box-shadow: 0px 14.5rpx 45.25rpx rgba(0,0,0,0.03); z-index: 1;">
+      <text style="font-size: 43.5rpx; font-weight: 400; color: rgba(0,0,0,0.9);">小程序多端框架交流群</text>
+      <text style="font-size: 25.4rpx; margin-top: 14.5rpx; margin-bottom: 72.44rpx; font-weight: 400; color: rgba(0,0,0,0.55);">长按识别二维码</text>
+      <!-- <view style="background-color: black; width: 100%; height: 482.5rpx;">111</view> -->
+      <image src="/images/qrcode.png" show-menu-by-longpress="{{true}}" mode="aspectFit" style="width: 100%;"></image>
+    </view>
+  </view>
+
+</scroll-view>

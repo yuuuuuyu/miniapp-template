@@ -1,0 +1,32 @@
+<!--pages/experience/appcase/appcase.wxml-->
+<view class="appcase-container">
+  <view class="case_box">
+    <view class="case_title">iOS应用部分案例</view>
+    <view class="case_list" wx:for="{{iosCaseData}}" wx:key="name">
+      <view class="case_item" data-url="{{item.url}}">
+        <image class="case_headimg" src="{{item.icon}}"/>
+        <view class="case_right">
+          <view class="case_content">
+            <view class="case_name">{{item.name}}</view>
+            <view class="case_time">{{item.cost}} {{item.dev}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="case_box">
+    <view class="case_title">Android应用部分案例</view>
+    <view class="case_list" wx:for="{{androidCaseData}}" wx:key="name">
+      <view class="case_item" data-url="{{item.url}}">
+        <image class="case_headimg" src="{{item.icon}}"/>
+        <view class="case_right">
+          <view class="case_content">
+            <view class="case_name">{{item.name}}</view>
+            <view class="case_time">{{item.cost}} {{item.dev}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="join_group" bind:tap="toJoinGroup">加群了解更多</view>
+</view>

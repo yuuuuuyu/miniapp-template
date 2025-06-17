@@ -1,0 +1,28 @@
+{
+    "name": "miniprogram-ts-less-quickstart",
+    "version": "1.0.1",
+    "description": "",
+    "scripts": {
+        "preview": "node cli/index.js preview --qrcode-format terminal",
+        "preview:image": "node cli/index.js preview --qrcode-format image",
+        "upload": "node cli/index.js upload",
+        "upload:patch": "node cli/index.js upload --increment-type patch",
+        "upload:minor": "node cli/index.js upload --increment-type minor",
+        "upload:major": "node cli/index.js upload --increment-type major",
+        "upload:no-increment": "node cli/index.js upload --no-auto-increment",
+        "upload:prod": "NODE_ENV=production node cli/index.js upload",
+        "upload:staging": "NODE_ENV=staging node cli/index.js upload",
+        "ci:help": "node cli/index.js help"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "",
+    "devDependencies": {
+        "@babel/helper-string-parser": "^7.27.1",
+        "@babel/helper-validator-identifier": "^7.27.1",
+        "chalk": "4",
+        "miniprogram-api-typings": "^2.8.3-1",
+        "miniprogram-ci": "^2.1.14",
+        "to-fast-properties": "2.0.0"
+    }
+}

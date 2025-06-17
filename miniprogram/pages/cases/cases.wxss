@@ -1,0 +1,64 @@
+/* pages/cases/cases.wxss */
+.appcase-container {
+  padding-top: 43.44rpx;
+  padding-bottom: calc(0px + env(safe-area-inset-bottom));
+}
+
+.appcase-container .case_box {
+  padding-bottom: 72.4rpx; /* 40 * 1.81 */
+}
+
+.appcase-container .case_title {
+  font-size: 30.77rpx; /* 17 * 1.81 */
+  font-weight: 500;
+  padding: 0 36.2rpx; /* 20 * 1.81 */
+  margin-bottom: 14.48rpx; /* 8 * 1.81 */
+}
+
+.appcase-container .case_item {
+  display: flex;
+  align-items: center;
+  padding: 0 36.2rpx; /* 20 * 1.81 */
+  box-sizing: border-box;
+}
+
+.appcase-container .case_item .case_headimg {
+  width: 86.88rpx; /* 48 * 1.81 */
+  height: 86.88rpx; /* 48 * 1.81 */
+  border-radius: 21.72rpx; /* 12 * 1.81 */
+}
+
+.appcase-container .case_item .case_right {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+  flex: 1;
+  height: 130.32rpx; /* 72 * 1.81 */
+  margin-left: 14.48rpx; /* 8 * 1.81 */
+  border-bottom: 0.5px solid rgba(0,0,0,0.1);
+}
+
+.appcase-container .case_item .case_name {
+  font-size: 25.34rpx; /* 14 * 1.81 */
+  font-weight: 500;
+  margin-bottom: 3.62rpx; /* 2 * 1.81 */
+}
+
+.appcase-container .case_item .case_time {
+  font-size: 21.72rpx; /* 12 * 1.81 */
+  color: rgba(0,0,0,0.55);
+}
+
+.appcase-container .case_item .right_arrow {
+  width: 21.72rpx; /* 12 * 1.81 */
+  height: 43.44rpx; /* 24 * 1.81 */
+}
+
+.appcase-container .join_group {
+  padding-bottom: 86.88rpx; /* 48 * 1.81 */
+  margin-top: 28.96rpx; /* 16 * 1.81 */
+  text-align: center;
+  font-size: 25.34rpx; /* 14 * 1.81 */
+  color: #576B95;
+}
