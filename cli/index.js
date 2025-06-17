@@ -7,6 +7,7 @@
 
 const ci = require('miniprogram-ci');
 const path = require('path');
+const inquirer = require('inquirer');
 const logger = require('./utils/logger');
 const { validateConfig, getVersion, getAndIncrementVersion, getTimestamp, fileExists } = require('./utils/helpers');
 
@@ -55,6 +56,101 @@ function createProject(config) {
     }
 }
 
+// 交互式获取预览配置
+async function getPreviewConfig(config, options = {}) {
+    // 如果明确禁用交互模式，或者在非交互环境中，直接返回选项
+    if (options.interactive === false || !process.stdin.isTTY) {
+        return options;
+    }
+
+    const questions = [];
+
+    // 预览描述
+    if (!options.desc) {
+        questions.push({
+            type: 'input',
+            name: 'desc',
+            message: '请输入预览描述:',
+            default: config.preview.desc || `预览版本 - ${getTimestamp()}`
+        });
+    }
+
+    // 二维码格式
+    if (!options.qrcodeFormat) {
+        questions.push({
+            type: 'list',
+            name: 'qrcodeFormat',
+            message: '请选择二维码格式:',
+            choices: [
+                { name: '终端显示 (terminal)', value: 'terminal' },
+                { name: '图片文件 (image)', value: 'image' },
+                { name: 'Base64 编码 (base64)', value: 'base64' }
+            ],
+            default: config.preview.qrcodeFormat || 'terminal'
+        });
+    }
+
+    // 预览页面路径
+    if (!options.pagePath) {
+        questions.push({
+            type: 'input',
+            name: 'pagePath',
+            message: '请输入预览页面路径 (可选):',
+            default: config.preview.pagePath || ''
+        });
+    }
+
+    // 预览参数
+    if (!options.searchQuery) {
+        questions.push({
+            type: 'input',
+            name: 'searchQuery',
+            message: '请输入预览参数 (可选):',
+            default: config.preview.searchQuery || ''
+        });
+    }
+
+    // 场景值
+    if (!options.scene) {
+        questions.push({
+            type: 'input',
+            name: 'scene',
+            message: '请输入场景值 (可选):',
+            default: config.preview.scene ? config.preview.scene.toString() : '1001',
+            validate: (input) => {
+                if (!input) return true;
+                const num = parseInt(input);
+                return !isNaN(num) && num > 0 ? true : '请输入有效的场景值';
+            }
+        });
+    }
+
+    if (questions.length === 0) {
+        return options;
+    }
+
+    const answers = await inquirer.prompt(questions);
+
+    // 处理场景值转换
+    if (answers.scene) {
+        answers.scene = parseInt(answers.scene) || undefined;
+    }
+
+    // 如果选择了图片格式，询问输出路径
+    const qrcodeFormat = answers.qrcodeFormat || options.qrcodeFormat;
+    if (qrcodeFormat === 'image' && !options.qrcodeOutput) {
+        const outputQuestion = await inquirer.prompt([{
+            type: 'input',
+            name: 'qrcodeOutput',
+            message: '请输入二维码图片保存路径:',
+            default: config.preview.qrcodeOutputDest || './preview-qrcode.jpg'
+        }]);
+        answers.qrcodeOutput = outputQuestion.qrcodeOutput;
+    }
+
+    return { ...options, ...answers };
+}
+
 // 预览功能
 async function preview(options = {}) {
     logger.info('开始预览小程序...');
@@ -67,37 +163,43 @@ async function preview(options = {}) {
     }
 
     try {
+        // 获取交互式配置
+        const interactiveOptions = await getPreviewConfig(config, options);
+
         const project = createProject(config);
 
         // 合并预览配置
         const previewOptions = {
             project,
-            desc: options.desc || config.preview.desc || `预览版本 - ${getTimestamp()}`,
+            desc: interactiveOptions.desc || config.preview.desc || `预览版本 - ${getTimestamp()}`,
             setting: config.setting,
-            qrcodeFormat: options.qrcodeFormat || config.preview.qrcodeFormat || 'terminal',
+            qrcodeFormat: interactiveOptions.qrcodeFormat || config.preview.qrcodeFormat || 'terminal',
             onProgressUpdate: (info) => {
                 logger.progress(`预览进度: ${info.message || info}`);
             }
         };
 
-        // 设置二维码输出路径
+        // 设置二维码输出路径（所有格式都需要，即使不实际保存文件）
         if (previewOptions.qrcodeFormat === 'image') {
-            previewOptions.qrcodeOutputDest = options.qrcodeOutput || config.preview.qrcodeOutputDest;
+            previewOptions.qrcodeOutputDest = interactiveOptions.qrcodeOutput || config.preview.qrcodeOutputDest;
+        } else {
+            // 为 base64 和 terminal 格式提供默认路径，避免 invalid qrcodeOutputDest 错误
+            previewOptions.qrcodeOutputDest = config.preview.qrcodeOutputDest || './preview-qrcode.jpg';
         }
 
         // 设置预览页面
-        if (options.pagePath || config.preview.pagePath) {
-            previewOptions.pagePath = options.pagePath || config.preview.pagePath;
+        if (interactiveOptions.pagePath || config.preview.pagePath) {
+            previewOptions.pagePath = interactiveOptions.pagePath || config.preview.pagePath;
         }
 
         // 设置预览参数
-        if (options.searchQuery || config.preview.searchQuery) {
-            previewOptions.searchQuery = options.searchQuery || config.preview.searchQuery;
+        if (interactiveOptions.searchQuery || config.preview.searchQuery) {
+            previewOptions.searchQuery = interactiveOptions.searchQuery || config.preview.searchQuery;
         }
 
         // 设置场景值
-        if (options.scene || config.preview.scene) {
-            previewOptions.scene = options.scene || config.preview.scene;
+        if (interactiveOptions.scene || config.preview.scene) {
+            previewOptions.scene = interactiveOptions.scene || config.preview.scene;
         }
 
         logger.info('预览配置:', {
@@ -136,6 +238,93 @@ async function preview(options = {}) {
     }
 }
 
+// 交互式获取上传配置
+async function getUploadConfig(config, options = {}) {
+    // 如果明确禁用交互模式，或者在非交互环境中，直接返回选项
+    if (options.interactive === false || !process.stdin.isTTY) {
+        return options;
+    }
+
+    const questions = [];
+
+    // 版本号处理
+    if (!options.version && options.autoIncrement !== false) {
+        questions.push({
+            type: 'list',
+            name: 'versionAction',
+            message: '请选择版本号处理方式:',
+            choices: [
+                { name: '自动递增 Patch 版本 (x.x.X)', value: 'patch' },
+                { name: '自动递增 Minor 版本 (x.X.0)', value: 'minor' },
+                { name: '自动递增 Major 版本 (X.0.0)', value: 'major' },
+                { name: '手动输入版本号', value: 'manual' },
+                { name: '使用当前版本号', value: 'current' }
+            ],
+            default: options.incrementType || 'patch'
+        });
+    }
+
+    // 上传描述
+    if (!options.desc) {
+        questions.push({
+            type: 'input',
+            name: 'desc',
+            message: '请输入上传描述:',
+            default: config.upload.desc || '通过 CI 上传'
+        });
+    }
+
+    // 机器人编号
+    if (!options.robot) {
+        questions.push({
+            type: 'input',
+            name: 'robot',
+            message: '请输入机器人编号 (1-30):',
+            default: (config.robot || 1).toString(),
+            validate: (input) => {
+                const num = parseInt(input);
+                return !isNaN(num) && num >= 1 && num <= 30 ? true : '请输入 1-30 之间的数字';
+            }
+        });
+    }
+
+    if (questions.length === 0) {
+        return options;
+    }
+
+    const answers = await inquirer.prompt(questions);
+
+    // 处理版本号
+    if (answers.versionAction) {
+        if (answers.versionAction === 'manual') {
+            const versionQuestion = await inquirer.prompt([{
+                type: 'input',
+                name: 'version',
+                message: '请输入版本号:',
+                default: getVersion(config),
+                validate: (input) => {
+                    const versionRegex = /^\d+\.\d+\.\d+$/;
+                    return versionRegex.test(input) ? true : '请输入有效的版本号格式 (如: 1.0.0)';
+                }
+            }]);
+            answers.version = versionQuestion.version;
+            answers.autoIncrement = false;
+        } else if (answers.versionAction === 'current') {
+            answers.autoIncrement = false;
+        } else {
+            answers.incrementType = answers.versionAction;
+        }
+        delete answers.versionAction;
+    }
+
+    // 处理机器人编号转换
+    if (answers.robot) {
+        answers.robot = parseInt(answers.robot);
+    }
+
+    return { ...options, ...answers };
+}
+
 // 上传功能
 async function upload(options = {}) {
     logger.info('开始上传小程序...');
@@ -148,30 +337,33 @@ async function upload(options = {}) {
     }
 
     try {
+        // 获取交互式配置
+        const interactiveOptions = await getUploadConfig(config, options);
+
         const project = createProject(config);
 
         // 版本号处理逻辑
         let version;
-        if (options.version) {
+        if (interactiveOptions.version) {
             // 如果明确指定了版本号，使用指定的版本号
-            version = options.version;
-        } else if (options.autoIncrement !== false) {
+            version = interactiveOptions.version;
+        } else if (interactiveOptions.autoIncrement !== false) {
             // 默认自动递增版本号（除非明确设置 --no-auto-increment）
-            const incrementType = options.incrementType || 'patch';
+            const incrementType = interactiveOptions.incrementType || 'patch';
             version = getAndIncrementVersion(config, incrementType);
         } else {
             // 不自动递增，使用当前版本号
             version = getVersion(config);
         }
 
-        const desc = options.desc || `${config.upload.desc} - v${version} - ${getTimestamp()}`;
+        const desc = interactiveOptions.desc || `${config.upload.desc} - v${version} - ${getTimestamp()}`;
 
         const uploadOptions = {
             project,
             version,
             desc,
             setting: config.setting,
-            robot: options.robot || config.robot || 1,
+            robot: interactiveOptions.robot || config.robot || 1,
             onProgressUpdate: (info) => {
                 logger.progress(`上传进度: ${info.message || info}`);
             }
@@ -232,6 +424,16 @@ function parseArgs() {
                 continue;
             }
 
+            if (key === 'no-interactive') {
+                options.interactive = false;
+                continue;
+            }
+
+            if (key === 'interactive') {
+                options.interactive = true;
+                continue;
+            }
+
             // 处理键值对参数
             const nextArg = args[i + 1];
             if (nextArg && !nextArg.startsWith('--')) {
@@ -258,6 +460,10 @@ miniprogram-ci CLI 工具
   upload                 上传小程序
   help                   显示帮助信息
 
+通用选项:
+  --interactive          启用交互模式 (默认启用)
+  --no-interactive       禁用交互模式
+
 预览选项:
   --desc <string>        预览描述
   --qrcode-format <type> 二维码格式 (image|base64|terminal)
@@ -281,14 +487,20 @@ miniprogram-ci CLI 工具
   DEBUG                 调试模式
 
 示例:
-  # 预览小程序
+  # 交互式预览小程序 (默认模式)
   node cli/index.js preview
+
+  # 非交互式预览小程序
+  node cli/index.js preview --no-interactive --qrcode-format terminal
 
   # 预览并保存二维码图片
   node cli/index.js preview --qrcode-format image --qrcode-output ./qr.jpg
 
-  # 上传小程序 (自动递增 patch 版本号)
-  node cli/index.js upload --desc "修复bug"
+  # 交互式上传小程序 (默认模式)
+  node cli/index.js upload
+
+  # 非交互式上传小程序 (自动递增 patch 版本号)
+  node cli/index.js upload --no-interactive --desc "修复bug"
 
   # 上传小程序 (自动递增 minor 版本号)
   node cli/index.js upload --increment-type minor --desc "新功能"
