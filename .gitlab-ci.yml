@@ -13,6 +13,7 @@ build-job:
   tags:
     - miniprogram
   script:
+    - echo "$WX_PRIVATE_KEY" | base64 -d > ./private.wx12e1d849722bc528.key
     - echo "安装项目依赖..."
     - npm install
     - echo "构建npm包..."
