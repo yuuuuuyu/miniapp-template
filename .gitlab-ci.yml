@@ -11,7 +11,7 @@ cache:
 build-job:
   stage: build
   tags:
-    - build
+    - miniprogram
   script:
     - echo "安装项目依赖..."
     - npm install
