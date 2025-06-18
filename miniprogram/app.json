@@ -1,4 +1,7 @@
 {
+    "usingComponents": {
+      "van-icon": "@vant/weapp/icon/index"
+    },
     "pages": [
         "pages/index/index",
         "pages/cases/cases",
