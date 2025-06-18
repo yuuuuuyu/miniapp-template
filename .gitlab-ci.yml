@@ -8,10 +8,6 @@ cache:
     - node_modules/
     - .npm/
 
-variables:
-  # 将 npm 缓存写入项目目录，避免 ~/.npm 权限问题
-  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
-
 build-job:
   stage: build
   tags:
