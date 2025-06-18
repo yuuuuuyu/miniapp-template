@@ -16,10 +16,6 @@ build-job:
   stage: build
   tags:
     - miniprogram
-  before_script:
-    # 修复权限问题（不使用 sudo）
-    - chown -R $(id -u):$(id -g) .npm || true
-    - chown -R $(id -u):$(id -g) node_modules || true
   script:
     - echo "安装项目依赖..."
     - npm install
