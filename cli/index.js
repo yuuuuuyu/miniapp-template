@@ -619,7 +619,6 @@ async function main() {
                 break;
 
             case 'build-npm':
-            case 'buildnpm':
                 await buildNpm(options);
                 break;
 

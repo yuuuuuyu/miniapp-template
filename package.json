@@ -5,7 +5,7 @@
     "scripts": {
         "preview": "node cli/index.js preview",
         "upload": "node cli/index.js upload",
-        "build:npm": "node cli/index.js build-npm",
+        "build-npm": "node cli/index.js build-npm",
         "ci:help": "node cli/index.js help"
     },
     "keywords": [],

@@ -50,6 +50,15 @@ miniprogram-ci的构建npm功能支持三个重要参数：
 2. **options.ignores** (可选): 指定构建npm时需要排除的规则，支持glob模式
 3. **options.reporter** (可选): 构建过程的回调函数，用于接收构建信息
 
+#### 智能构建模式
+
+本工具会自动检测项目配置：
+
+- **手动构建模式**: 如果 `project.config.json` 中设置了 `packNpmManually: true` 和 `packNpmRelationList`，将使用 `ci.packNpmManually` 方法
+- **标准构建模式**: 否则使用标准的 `ci.packNpm` 方法
+
+这样可以适应不同的项目结构，特别是当 `node_modules` 不在小程序目录下时。
+
 #### 配置文件中的构建npm选项
 
 在 `ci.config.js` 中可以配置默认的构建npm选项：
