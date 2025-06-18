@@ -10,6 +10,9 @@ cache:
 # 安装依赖
 build-job:
   stage: build
+  tags:
+    - miniprogram  # 您自定义的标签
+    - nodejs       # 可以指定多个标签
   script:
     - echo "安装项目依赖..."
     - npm install
@@ -22,6 +25,9 @@ build-job:
 # 上传小程序
 deploy-job:
   stage: deploy
+  tags:
+    - miniprogram  # 确保使用相同的标签
+    - nodejs
   script:
     - echo "上传小程序到微信平台..."
     - npm run upload -- --increment-type patch
