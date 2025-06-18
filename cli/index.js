@@ -83,8 +83,7 @@ async function getPreviewConfig(config, options = {}) {
             message: '请选择二维码格式:',
             choices: [
                 { name: '终端显示 (terminal)', value: 'terminal' },
-                { name: '图片文件 (image)', value: 'image' },
-                { name: 'Base64 编码 (base64)', value: 'base64' }
+                { name: '图片文件 (image)', value: 'image' }
             ],
             default: config.preview.qrcodeFormat || 'terminal'
         });
@@ -179,11 +178,11 @@ async function preview(options = {}) {
             }
         };
 
-        // 设置二维码输出路径（所有格式都需要，即使不实际保存文件）
+        // 设置二维码输出路径
         if (previewOptions.qrcodeFormat === 'image') {
             previewOptions.qrcodeOutputDest = interactiveOptions.qrcodeOutput || config.preview.qrcodeOutputDest;
         } else {
-            // 为 base64 和 terminal 格式提供默认路径，避免 invalid qrcodeOutputDest 错误
+            // 为 terminal 格式提供默认路径，避免 invalid qrcodeOutputDest 错误
             previewOptions.qrcodeOutputDest = config.preview.qrcodeOutputDest || './preview-qrcode.jpg';
         }
 
@@ -466,7 +465,7 @@ miniprogram-ci CLI 工具
 
 预览选项:
   --desc <string>        预览描述
-  --qrcode-format <type> 二维码格式 (image|base64|terminal)
+  --qrcode-format <type> 二维码格式 (image|terminal)
   --qrcode-output <path> 二维码输出路径 (仅当格式为image时)
   --page-path <path>     预览页面路径
   --search-query <query> 预览参数

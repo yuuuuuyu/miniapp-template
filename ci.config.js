@@ -46,7 +46,7 @@ module.exports = {
 
     // 预览配置
     preview: {
-        qrcodeFormat: 'terminal', // 二维码格式: 'image' | 'base64' | 'terminal'
+        qrcodeFormat: 'terminal', // 二维码格式: 'image' | 'terminal'
         qrcodeOutputDest: path.resolve(__dirname, './preview-qrcode.jpg'), // 二维码保存路径
         pagePath: '', // 预览页面路径，如: 'pages/index/index'
         searchQuery: '', // 预览参数，如: 'a=1&b=2'
