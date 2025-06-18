@@ -6,12 +6,21 @@ stages:
 cache:
   paths:
     - node_modules/
+    - .npm/
 
-# 安装依赖
+variables:
+  # 将 npm 缓存放到项目目录中，避免写入 ~/.npm 报错
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+
+# 安装依赖 + 构建 + 上传
 build-job:
   stage: build
   tags:
     - miniprogram
+  before_script:
+    # 修复 .npm 和 node_modules 权限问题（防止 EACCES 报错）
+    - sudo chown -R $(id -u):$(id -g) .npm || true
+    - sudo chown -R $(id -u):$(id -g) node_modules || true
   script:
     - echo "安装项目依赖..."
     - npm install
