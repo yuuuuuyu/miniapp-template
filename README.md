@@ -129,9 +129,39 @@ node cli/index.js upload --desc "手动指定的描述" --robot 2
 ## 注意事项
 
 1. 构建npm前请确保项目中存在 `package.json` 和 `node_modules` 目录
-2. 构建npm会在小程序目录下生成 `miniprogram_npm` 目录
+2. 构建npm会生成 `miniprogram_npm` 目录，位置取决于配置
 3. 如果构建过程中出现警告，请检查相关的npm包是否正确安装
 4. 建议在上传前先执行构建npm，确保第三方包能正常使用
+
+## 构建位置配置
+
+为了确保开发者工具和CI工具的构建行为一致，建议在 `project.config.json` 中配置：
+
+```json
+{
+  "setting": {
+    "packNpmManually": false,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./"
+      }
+    ]
+  }
+}
+```
+
+这样配置后：
+- **开发者工具**: 会在项目根目录生成 `miniprogram_npm`
+- **CI工具**: 也会在项目根目录生成 `miniprogram_npm`
+- 两者行为保持一致
+
+### 构建位置说明
+
+- `miniprogramNpmDistDir: "./"` - 构建到项目根目录
+- `miniprogramNpmDistDir: "./miniprogram"` - 构建到miniprogram目录下
+
+根据你的项目结构选择合适的配置。
 
 ## 许可证
 

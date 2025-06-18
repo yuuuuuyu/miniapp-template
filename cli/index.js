@@ -309,8 +309,9 @@ async function buildNpm(options = {}) {
             logger.warn('无法读取 project.config.json，使用默认构建方式');
         }
 
-        if (projectConfig.setting?.packNpmManually && projectConfig.setting?.packNpmRelationList) {
-            logger.info('检测到手动构建npm配置，使用 packNpmManually 方式构建');
+        // 检查是否有packNpmRelationList配置，如果有则优先使用手动构建
+        if (projectConfig.setting?.packNpmRelationList && projectConfig.setting.packNpmRelationList.length > 0) {
+            logger.info('检测到npm构建关系配置，使用 packNpmManually 方式构建');
 
             // 使用手动构建npm的方式
             const relationList = projectConfig.setting.packNpmRelationList;
@@ -340,7 +341,30 @@ async function buildNpm(options = {}) {
         } else {
             // 使用标准构建npm的方式
             logger.info('使用标准构建npm方式');
-            warnings = await ci.packNpm(project, buildOptions);
+            try {
+                warnings = await ci.packNpm(project, buildOptions);
+            } catch (error) {
+                if (error.message.includes('__NO_NODE_MODULES__')) {
+                    logger.warn('标准构建方式失败，尝试使用手动构建方式...');
+
+                    // 如果标准方式失败，尝试手动构建到项目根目录
+                    const packageJsonPath = path.resolve(config.projectPath, 'package.json');
+                    const miniprogramNpmDistDir = config.projectPath; // 构建到项目根目录
+
+                    logger.info(`构建npm包: ${packageJsonPath} -> ${miniprogramNpmDistDir}`);
+
+                    const result = await ci.packNpmManually({
+                        packageJsonPath,
+                        miniprogramNpmDistDir,
+                        ignores: buildOptions.ignores
+                    });
+
+                    logger.info(`构建结果: 小程序包数量=${result.miniProgramPackNum}, 其他包数量=${result.otherNpmPackNum}`);
+                    warnings = result.warnList || [];
+                } else {
+                    throw error;
+                }
+            }
         }
 
         logger.success('构建npm成功!');
