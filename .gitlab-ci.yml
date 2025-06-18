@@ -2,31 +2,30 @@ stages:
   - build
   - deploy
 
-# 全局缓存配置
+# 缓存 node_modules 和本地 .npm 缓存，加快构建
 cache:
   paths:
     - node_modules/
     - .npm/
 
 variables:
-  # 将 npm 缓存放到项目目录中，避免写入 ~/.npm 报错
+  # 将 npm 缓存写入项目目录，避免 ~/.npm 权限问题
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
 
-# 安装依赖 + 构建 + 上传
 build-job:
   stage: build
   tags:
     - miniprogram
   before_script:
-    # 修复 .npm 和 node_modules 权限问题（防止 EACCES 报错）
-    - sudo chown -R $(id -u):$(id -g) .npm || true
-    - sudo chown -R $(id -u):$(id -g) node_modules || true
+    # 修复权限问题（不使用 sudo）
+    - chown -R $(id -u):$(id -g) .npm || true
+    - chown -R $(id -u):$(id -g) node_modules || true
   script:
     - echo "安装项目依赖..."
     - npm install
     - echo "构建npm包..."
     - npm run build-npm
-    - echo "构建完成。开始上传"
+    - echo "构建完成，开始上传..."
     - npm run upload
   only:
     - main
