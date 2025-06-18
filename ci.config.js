@@ -60,6 +60,12 @@ module.exports = {
         version: '1.0.0' // 版本号，可通过环境变量 VERSION 覆盖
     },
 
+    // 构建npm配置
+    buildNpm: {
+        ignores: [], // 构建npm时需要排除的规则
+        verbose: false // 是否显示详细构建信息
+    },
+
     // 机器人配置 (1-30)
     robot: parseInt(process.env.ROBOT) || 1,
 

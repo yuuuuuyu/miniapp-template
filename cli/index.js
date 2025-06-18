@@ -267,6 +267,119 @@ function getUploadConfig(config, options = {}) {
     };
 }
 
+
+
+// 构建npm功能
+async function buildNpm(options = {}) {
+    logger.info('开始构建npm...');
+
+    const config = loadConfig();
+
+    // 验证配置
+    if (!validateConfig(config)) {
+        process.exit(1);
+    }
+
+    try {
+        const project = createProject(config);
+
+        // 构建npm配置
+        const buildOptions = {
+            ignores: options.ignores || config.buildNpm?.ignores || [],
+            reporter: (infos) => {
+                if (options.verbose || config.buildNpm?.verbose) {
+                    logger.info('构建信息:', infos);
+                }
+            }
+        };
+
+        logger.info('构建npm配置:', {
+            ignores: buildOptions.ignores.length > 0 ? buildOptions.ignores : '无排除规则',
+            verbose: options.verbose || config.buildNpm?.verbose || false
+        });
+
+        let warnings;
+
+        // 检查项目配置是否启用了手动构建npm
+        const projectConfigPath = path.resolve(config.projectPath, 'project.config.json');
+        let projectConfig = {};
+        try {
+            projectConfig = require(projectConfigPath);
+        } catch (error) {
+            logger.warn('无法读取 project.config.json，使用默认构建方式');
+        }
+
+        if (projectConfig.setting?.packNpmManually && projectConfig.setting?.packNpmRelationList) {
+            logger.info('检测到手动构建npm配置，使用 packNpmManually 方式构建');
+
+            // 使用手动构建npm的方式
+            const relationList = projectConfig.setting.packNpmRelationList;
+            const results = [];
+
+            for (const relation of relationList) {
+                const packageJsonPath = path.resolve(config.projectPath, relation.packageJsonPath);
+                const miniprogramNpmDistDir = path.resolve(config.projectPath, relation.miniprogramNpmDistDir);
+
+                logger.info(`构建npm包: ${packageJsonPath} -> ${miniprogramNpmDistDir}`);
+
+                const result = await ci.packNpmManually({
+                    packageJsonPath,
+                    miniprogramNpmDistDir,
+                    ignores: buildOptions.ignores
+                });
+
+                results.push(result);
+                logger.info(`构建结果: 小程序包数量=${result.miniProgramPackNum}, 其他包数量=${result.otherNpmPackNum}`);
+            }
+
+            // 合并所有警告
+            warnings = results.reduce((allWarnings, result) => {
+                return allWarnings.concat(result.warnList || []);
+            }, []);
+
+        } else {
+            // 使用标准构建npm的方式
+            logger.info('使用标准构建npm方式');
+            warnings = await ci.packNpm(project, buildOptions);
+        }
+
+        logger.success('构建npm成功!');
+
+        if (warnings && warnings.length > 0) {
+            logger.warn(`构建完成，但有 ${warnings.length} 个警告:`);
+            warnings.forEach((warning, index) => {
+                logger.warn(`${index + 1}. ${warning.msg}`);
+                if (warning.code) {
+                    logger.warn(`   代码: ${warning.code}`);
+                }
+                if (warning.jsPath) {
+                    logger.warn(`   位置: ${warning.jsPath}:${warning.startLine}-${warning.endLine}`);
+                }
+                logger.warn('   ---------------');
+            });
+        } else {
+            logger.info('构建过程无警告');
+        }
+
+        return warnings;
+
+    } catch (error) {
+        logger.error('构建npm失败:', error.message);
+
+        if (error.message.includes('privatekey')) {
+            logger.info('请检查私钥文件是否正确');
+        } else if (error.message.includes('appid')) {
+            logger.info('请检查 appid 是否正确');
+        } else if (error.message.includes('package.json')) {
+            logger.info('请检查项目中是否存在 package.json 文件');
+        } else if (error.message.includes('node_modules')) {
+            logger.info('请检查项目中是否存在 node_modules 目录');
+        }
+
+        throw error;
+    }
+}
+
 // 上传功能
 async function upload(options = {}) {
     logger.info('开始上传小程序...');
@@ -384,11 +497,22 @@ function parseArgs() {
                 continue;
             }
 
+            if (key === 'verbose') {
+                options.verbose = true;
+                continue;
+            }
+
             // 处理键值对参数
             const nextArg = args[i + 1];
             if (nextArg && !nextArg.startsWith('--')) {
                 const optionName = key.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-                options[optionName] = nextArg;
+
+                // 特殊处理ignores参数，将逗号分隔的字符串转换为数组
+                if (optionName === 'ignores') {
+                    options[optionName] = nextArg.split(',').map(pattern => pattern.trim());
+                } else {
+                    options[optionName] = nextArg;
+                }
                 i++; // 跳过下一个参数，因为它是当前参数的值
             }
         }
@@ -408,6 +532,7 @@ miniprogram-ci CLI 工具
 命令:
   preview                预览小程序
   upload                 上传小程序
+  build-npm              构建npm (对应开发者工具的构建npm功能)
   help                   显示帮助信息
 
 通用选项:
@@ -428,6 +553,10 @@ miniprogram-ci CLI 工具
   --robot <number>       CI机器人编号 (1-30，默认: 1)
   --increment-type <type> 版本递增类型 (major|minor|patch，默认: patch)
   --no-auto-increment    禁用自动版本递增
+
+构建npm选项:
+  --ignores <patterns>   指定需要排除的规则 (逗号分隔)
+  --verbose              显示详细构建信息
 
 环境变量:
   NODE_ENV              环境 (development|staging|production)
@@ -463,6 +592,15 @@ miniprogram-ci CLI 工具
 
   # 使用环境变量
   VERSION=1.0.2 ROBOT=2 node cli/index.js upload
+
+  # 构建npm
+  node cli/index.js build-npm
+
+  # 构建npm (显示详细信息)
+  node cli/index.js build-npm --verbose
+
+  # 构建npm (排除特定文件)
+  node cli/index.js build-npm --ignores "test/**/*,docs/**/*"
 `);
 }
 
@@ -478,6 +616,11 @@ async function main() {
 
             case 'upload':
                 await upload(options);
+                break;
+
+            case 'build-npm':
+            case 'buildnpm':
+                await buildNpm(options);
                 break;
 
             case 'help':
@@ -509,6 +652,7 @@ async function main() {
 module.exports = {
     preview,
     upload,
+    buildNpm,
     loadConfig,
     createProject
 };

@@ -3,11 +3,15 @@ lockfileVersion: 5.3
 specifiers:
   '@babel/helper-string-parser': ^7.27.1
   '@babel/helper-validator-identifier': ^7.27.1
+  '@vant/weapp': ^1.11.6
   chalk: '4'
   inquirer: ^8.2.6
   miniprogram-api-typings: ^2.8.3-1
   miniprogram-ci: ^2.1.14
   to-fast-properties: 2.0.0
+
+dependencies:
+  '@vant/weapp': 1.11.7
 
 devDependencies:
   '@babel/helper-string-parser': 7.27.1
@@ -333,7 +337,7 @@ packages:
     resolution: {integrity: sha512-XXve0CBtOW0pd7MRzzmoyuSj0e3SEzj8pgyFxnTT1NJZL38BD1MK7yYrm8yefRPIDvNNe14xR4FdbHwpInD4rA==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/template': 7.20.7
+      '@babel/template': 7.27.2
       '@babel/traverse': 7.21.4
       '@babel/types': 7.24.6
     transitivePeerDependencies:
@@ -2256,6 +2260,10 @@ packages:
       '@types/node': 24.0.3
     dev: true
 
+  /@vant/weapp/1.11.7:
+    resolution: {integrity: sha512-Rwn9BBnb4kHSV4XmvBicwtd42J+amEUfnFDcXJsGNPNX4a9c/DoT6YLsm4X1wB2+sQbdiQsbFBLAvGRBxCkD8g==}
+    dev: false
+
   /@vue/reactivity/3.0.5:
     resolution: {integrity: sha512-3xodUE3sEIJgS7ntwUbopIpzzvi7vDAOjVamfb2l+v1FUg0jpd3gf62N2wggJw3fxBMr+QvyxpD+dBoxLsmAjw==}
     dependencies:
@@ -3284,7 +3292,7 @@ packages:
     hasBin: true
     dependencies:
       caniuse-lite: 1.0.30001723
-      electron-to-chromium: 1.5.168
+      electron-to-chromium: 1.5.169
       node-releases: 2.0.19
       update-browserslist-db: 1.1.3_browserslist@4.25.0
     dev: true
@@ -3977,8 +3985,8 @@ packages:
       safer-buffer: 2.1.2
     dev: true
 
-  /electron-to-chromium/1.5.168:
-    resolution: {integrity: sha512-RUNQmFLNIWVW6+z32EJQ5+qx8ci6RGvdtDC0Ls+F89wz6I2AthpXF0w0DIrn2jpLX0/PU9ZCo+Qp7bg/EckJmA==}
+  /electron-to-chromium/1.5.169:
+    resolution: {integrity: sha512-q7SQx6mkLy0GTJK9K9OiWeaBMV4XQtBSdf6MJUzDB/H/5tFXfIiX38Lci1Kl6SsgiEhz1SQI1ejEOU5asWEhwQ==}
     dev: true
 
   /emoji-regex/8.0.0:
