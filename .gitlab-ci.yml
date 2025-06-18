@@ -1,0 +1,30 @@
+stages:
+  - build
+  - deploy
+
+# 全局缓存配置
+cache:
+  paths:
+    - node_modules/
+
+# 安装依赖
+build-job:
+  stage: build
+  script:
+    - echo "安装项目依赖..."
+    - npm install
+    - echo "构建npm包..."
+    - npm run build-npm
+  only:
+    - main
+    - merge_requests
+
+# 上传小程序
+deploy-job:
+  stage: deploy
+  script:
+    - echo "上传小程序到微信平台..."
+    - npm run upload -- --increment-type patch
+  only:
+    - main
+  environment: production
