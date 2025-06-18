@@ -9,7 +9,7 @@ const ci = require('miniprogram-ci');
 const path = require('path');
 const inquirer = require('inquirer');
 const logger = require('./utils/logger');
-const { validateConfig, getVersion, getAndIncrementVersion, getTimestamp, fileExists } = require('./utils/helpers');
+const { validateConfig, getVersion, getAndIncrementVersion, getTimestamp, fileExists, getGitCommits, getGitUser, formatCommitsForUpload } = require('./utils/helpers');
 
 // 加载配置文件
 function loadConfig() {
@@ -237,91 +237,34 @@ async function preview(options = {}) {
     }
 }
 
-// 交互式获取上传配置
-async function getUploadConfig(config, options = {}) {
-    // 如果明确禁用交互模式，或者在非交互环境中，直接返回选项
-    if (options.interactive === false || !process.stdin.isTTY) {
-        return options;
-    }
+// 获取上传配置（非交互式）
+function getUploadConfig(config, options = {}) {
+    // 获取Git提交信息作为描述
+    const commits = getGitCommits(5);
+    const defaultDesc = formatCommitsForUpload(commits);
 
-    const questions = [];
+    // 获取Git用户信息作为默认robot
+    const gitUser = getGitUser();
+    const defaultRobot = options.robot || config.robot || 1;
 
-    // 版本号处理
-    if (!options.version && options.autoIncrement !== false) {
-        questions.push({
-            type: 'list',
-            name: 'versionAction',
-            message: '请选择版本号处理方式:',
-            choices: [
-                { name: '自动递增 Patch 版本 (x.x.X)', value: 'patch' },
-                { name: '自动递增 Minor 版本 (x.X.0)', value: 'minor' },
-                { name: '自动递增 Major 版本 (X.0.0)', value: 'major' },
-                { name: '手动输入版本号', value: 'manual' },
-                { name: '使用当前版本号', value: 'current' }
-            ],
-            default: options.incrementType || 'patch'
-        });
-    }
+    return {
+        // 版本号处理：默认自动递增patch版本
+        autoIncrement: options.autoIncrement !== false,
+        incrementType: options.incrementType || 'patch',
+        version: options.version, // 如果指定了版本号，则使用指定的
 
-    // 上传描述
-    if (!options.desc) {
-        questions.push({
-            type: 'input',
-            name: 'desc',
-            message: '请输入上传描述:',
-            default: config.upload.desc || '通过 CI 上传'
-        });
-    }
+        // 描述：使用Git提交信息
+        desc: options.desc || defaultDesc,
 
-    // 机器人编号
-    if (!options.robot) {
-        questions.push({
-            type: 'input',
-            name: 'robot',
-            message: '请输入机器人编号 (1-30):',
-            default: (config.robot || 1).toString(),
-            validate: (input) => {
-                const num = parseInt(input);
-                return !isNaN(num) && num >= 1 && num <= 30 ? true : '请输入 1-30 之间的数字';
-            }
-        });
-    }
+        // 机器人编号：必须是1-30之间的数字
+        robot: defaultRobot,
 
-    if (questions.length === 0) {
-        return options;
-    }
+        // Git信息
+        gitUser: gitUser,
+        commits: commits,
 
-    const answers = await inquirer.prompt(questions);
-
-    // 处理版本号
-    if (answers.versionAction) {
-        if (answers.versionAction === 'manual') {
-            const versionQuestion = await inquirer.prompt([{
-                type: 'input',
-                name: 'version',
-                message: '请输入版本号:',
-                default: getVersion(config),
-                validate: (input) => {
-                    const versionRegex = /^\d+\.\d+\.\d+$/;
-                    return versionRegex.test(input) ? true : '请输入有效的版本号格式 (如: 1.0.0)';
-                }
-            }]);
-            answers.version = versionQuestion.version;
-            answers.autoIncrement = false;
-        } else if (answers.versionAction === 'current') {
-            answers.autoIncrement = false;
-        } else {
-            answers.incrementType = answers.versionAction;
-        }
-        delete answers.versionAction;
-    }
-
-    // 处理机器人编号转换
-    if (answers.robot) {
-        answers.robot = parseInt(answers.robot);
-    }
-
-    return { ...options, ...answers };
+        ...options
+    };
 }
 
 // 上传功能
@@ -336,33 +279,38 @@ async function upload(options = {}) {
     }
 
     try {
-        // 获取交互式配置
-        const interactiveOptions = await getUploadConfig(config, options);
+        // 获取上传配置（非交互式）
+        const uploadConfig = getUploadConfig(config, options);
 
         const project = createProject(config);
 
         // 版本号处理逻辑
         let version;
-        if (interactiveOptions.version) {
+        if (uploadConfig.version) {
             // 如果明确指定了版本号，使用指定的版本号
-            version = interactiveOptions.version;
-        } else if (interactiveOptions.autoIncrement !== false) {
+            version = uploadConfig.version;
+            logger.info(`使用指定版本号: ${version}`);
+        } else if (uploadConfig.autoIncrement !== false) {
             // 默认自动递增版本号（除非明确设置 --no-auto-increment）
-            const incrementType = interactiveOptions.incrementType || 'patch';
+            const incrementType = uploadConfig.incrementType || 'patch';
+            const currentVersion = getVersion(config);
             version = getAndIncrementVersion(config, incrementType);
+            logger.info(`版本号自动递增: ${currentVersion} → ${version} (${incrementType})`);
         } else {
             // 不自动递增，使用当前版本号
             version = getVersion(config);
+            logger.info(`使用当前版本号: ${version}`);
         }
 
-        const desc = interactiveOptions.desc || `${config.upload.desc} - v${version} - ${getTimestamp()}`;
+        // 使用Git提交信息作为描述
+        const desc = uploadConfig.desc;
 
         const uploadOptions = {
             project,
             version,
             desc,
             setting: config.setting,
-            robot: interactiveOptions.robot || config.robot || 1,
+            robot: uploadConfig.robot,
             onProgressUpdate: (info) => {
                 logger.progress(`上传进度: ${info.message || info}`);
             }
@@ -370,9 +318,12 @@ async function upload(options = {}) {
 
         logger.info('上传配置:', {
             version: uploadOptions.version,
-            desc: uploadOptions.desc,
-            robot: uploadOptions.robot
+            robot: uploadOptions.robot,
+            gitUser: uploadConfig.gitUser.name || '未知用户',
+            commitsCount: uploadConfig.commits.length
         });
+
+        logger.info('上传描述:', uploadOptions.desc);
 
         const result = await ci.upload(uploadOptions);
 
@@ -473,8 +424,8 @@ miniprogram-ci CLI 工具
 
 上传选项:
   --version <string>     版本号 (指定后不会自动递增)
-  --desc <string>        上传描述
-  --robot <number>       机器人编号 (1-30)
+  --desc <string>        上传描述 (默认使用Git提交信息)
+  --robot <number>       CI机器人编号 (1-30，默认: 1)
   --increment-type <type> 版本递增类型 (major|minor|patch，默认: patch)
   --no-auto-increment    禁用自动版本递增
 
@@ -495,20 +446,20 @@ miniprogram-ci CLI 工具
   # 预览并保存二维码图片
   node cli/index.js preview --qrcode-format image --qrcode-output ./qr.jpg
 
-  # 交互式上传小程序 (默认模式)
+  # 上传小程序 (自动递增 patch 版本号，使用Git提交信息作为描述)
   node cli/index.js upload
 
-  # 非交互式上传小程序 (自动递增 patch 版本号)
-  node cli/index.js upload --no-interactive --desc "修复bug"
-
   # 上传小程序 (自动递增 minor 版本号)
-  node cli/index.js upload --increment-type minor --desc "新功能"
+  node cli/index.js upload --increment-type minor
 
   # 上传小程序 (指定版本号，不自动递增)
-  node cli/index.js upload --version 1.0.1 --desc "指定版本"
+  node cli/index.js upload --version 1.0.1
 
-  # 上传小程序 (禁用自动递增)
-  node cli/index.js upload --no-auto-increment --desc "保持当前版本"
+  # 上传小程序 (禁用自动递增，使用当前版本号)
+  node cli/index.js upload --no-auto-increment
+
+  # 上传小程序 (自定义描述和机器人编号)
+  node cli/index.js upload --desc "手动指定的描述" --robot 2
 
   # 使用环境变量
   VERSION=1.0.2 ROBOT=2 node cli/index.js upload

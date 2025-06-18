@@ -1,6 +1,6 @@
 {
   "name": "miniprogram-ts-less-quickstart",
-  "version": "1.1.1",
+  "version": "1.2.6",
   "description": "",
   "scripts": {
     "preview": "node cli/index.js preview",

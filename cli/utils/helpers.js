@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const logger = require('./logger');
 
 /**
@@ -217,6 +218,64 @@ function ensureDir(dirPath) {
     }
 }
 
+/**
+ * 获取Git提交信息
+ * @param {number} count 获取最近几条提交记录，默认5条
+ * @returns {Array} 提交信息数组
+ */
+function getGitCommits(count = 5) {
+    try {
+        // 获取最近的提交记录，格式：hash|author|date|message
+        const command = `git log --oneline -${count} --pretty=format:"%h|%an|%ad|%s" --date=short`;
+        const output = execSync(command, { encoding: 'utf8', cwd: process.cwd() });
+
+        return output.trim().split('\n').map(line => {
+            const [hash, author, date, message] = line.split('|');
+            return {
+                hash: hash.trim(),
+                author: author.trim(),
+                date: date.trim(),
+                message: message.trim()
+            };
+        });
+    } catch (error) {
+        logger.warn('获取Git提交信息失败:', error.message);
+        return [];
+    }
+}
+
+/**
+ * 获取Git当前用户信息
+ * @returns {object} {name, email}
+ */
+function getGitUser() {
+    try {
+        const name = execSync('git config user.name', { encoding: 'utf8', cwd: process.cwd() }).trim();
+        const email = execSync('git config user.email', { encoding: 'utf8', cwd: process.cwd() }).trim();
+        return { name, email };
+    } catch (error) {
+        logger.warn('获取Git用户信息失败:', error.message);
+        return { name: '', email: '' };
+    }
+}
+
+/**
+ * 格式化Git提交信息为上传描述
+ * @param {Array} commits 提交信息数组
+ * @returns {string} 格式化的描述
+ */
+function formatCommitsForUpload(commits) {
+    if (!commits || commits.length === 0) {
+        return '通过 CI/CD 自动上传';
+    }
+
+    const commitMessages = commits.map((commit, index) => {
+        return `${index + 1}. ${commit.message} (${commit.hash})`;
+    }).join('\n');
+
+    return `最近更新:\n${commitMessages}`;
+}
+
 module.exports = {
     fileExists,
     readJsonFile,
@@ -229,5 +288,8 @@ module.exports = {
     getTimestamp,
     validateConfig,
     formatFileSize,
-    ensureDir
+    ensureDir,
+    getGitCommits,
+    getGitUser,
+    formatCommitsForUpload
 };
