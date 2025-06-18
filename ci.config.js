@@ -4,11 +4,33 @@
  */
 
 const path = require('path');
+const fs = require('fs');
+
+// 动态读取项目配置
+function getProjectConfig() {
+    try {
+        const configPath = path.resolve(__dirname, './project.config.json');
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        return {
+            appid: config.appid,
+            projectName: config.projectname
+        };
+    } catch (error) {
+        console.error('读取 project.config.json 失败:', error.message);
+        // 提供默认值作为后备
+        return {
+            appid: process.env.APPID || 'wx12e1d849722bc528',
+            projectName: process.env.PROJECT_NAME || 'miniapp-IDC431'
+        };
+    }
+}
+
+const projectConfig = getProjectConfig();
 
 module.exports = {
-    // 项目基本信息
-    appid: 'wx12e1d849722bc528', // 从 project.config.json 获取
-    projectName: 'miniapp-IDC431', // 从 project.private.config.json 获取
+    // 项目基本信息 - 从 project.config.json 动态获取
+    appid: projectConfig.appid,
+    projectName: projectConfig.projectName,
 
     // 项目路径配置
     projectPath: path.resolve(__dirname, './'), // 项目根目录
@@ -16,7 +38,7 @@ module.exports = {
 
     // 私钥文件路径 (需要从微信公众平台下载)
     // 请将私钥文件放在项目根目录下，文件名格式: private.{appid}.key
-    privateKeyPath: path.resolve(__dirname, `./private.${process.env.APPID || 'wx12e1d849722bc528'}.key`),
+    privateKeyPath: path.resolve(__dirname, `./private.${projectConfig.appid}.key`),
 
     // 忽略文件配置
     ignores: [

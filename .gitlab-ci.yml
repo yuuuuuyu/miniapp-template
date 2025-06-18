@@ -13,7 +13,13 @@ build-job:
   tags:
     - miniprogram
   script:
-    - echo "$WX_PRIVATE_KEY" > ./private.wx12e1d849722bc528.key
+    # 从 project.config.json 中动态获取 appid
+    - export APPID=$(node -p "require('./project.config.json').appid")
+    - export PROJECT_NAME=$(node -p "require('./project.config.json').projectname")
+    - echo "项目信息: AppID=$APPID, 项目名称=$PROJECT_NAME"
+    # 使用动态获取的 appid 生成私钥文件
+    - echo "$WX_PRIVATE_KEY" > ./private.$APPID.key
+    - echo "私钥文件已生成: private.$APPID.key"
     - echo "安装项目依赖..."
     - npm install
     - echo "构建npm包..."
