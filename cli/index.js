@@ -8,6 +8,7 @@
 const ci = require('miniprogram-ci');
 const path = require('path');
 const inquirer = require('inquirer');
+const chalk = require('chalk');
 const logger = require('./utils/logger');
 const { validateConfig, getVersion, getAndIncrementVersion, getTimestamp, fileExists, getGitCommits, getGitUser, formatCommitsForUpload } = require('./utils/helpers');
 
@@ -152,7 +153,8 @@ async function getPreviewConfig(config, options = {}) {
 
 // 预览功能
 async function preview(options = {}) {
-    logger.info('开始预览小程序...');
+    logger.separator('小程序预览');
+    logger.step(1, '初始化配置', '加载配置文件并获取预览参数');
 
     const config = loadConfig();
 
@@ -161,11 +163,42 @@ async function preview(options = {}) {
         process.exit(1);
     }
 
+    // 重写console.log和process.stdout.write来过滤冗长输出
+    const originalConsoleLog = console.log;
+    const originalStdoutWrite = process.stdout.write;
+
+    console.log = function (...args) {
+        const message = args.join(' ');
+        const filtered = logger.filterOutput(message);
+        if (filtered && filtered !== message) {
+            originalConsoleLog.call(console, chalk.blue(logger.prefix), filtered);
+        } else if (filtered) {
+            originalConsoleLog.apply(console, args);
+        }
+        // 如果filtered为null，则不输出任何内容
+    };
+
+    process.stdout.write = function (chunk, encoding, callback) {
+        if (typeof chunk === 'string') {
+            const filtered = logger.filterOutput(chunk);
+            if (filtered && filtered !== chunk) {
+                return originalStdoutWrite.call(this, chalk.blue(logger.prefix) + ' ' + filtered, encoding, callback);
+            } else if (filtered) {
+                return originalStdoutWrite.call(this, chunk, encoding, callback);
+            }
+            // 如果filtered为null，则不输出任何内容
+            if (callback) callback();
+            return true;
+        }
+        return originalStdoutWrite.call(this, chunk, encoding, callback);
+    };
+
     try {
         // 获取交互式配置
         const interactiveOptions = await getPreviewConfig(config, options);
-
         const project = createProject(config);
+
+        logger.step(2, '配置预览参数', '设置预览选项和二维码格式');
 
         // 合并预览配置
         const previewOptions = {
@@ -174,7 +207,11 @@ async function preview(options = {}) {
             setting: config.setting,
             qrcodeFormat: interactiveOptions.qrcodeFormat || config.preview.qrcodeFormat || 'terminal',
             onProgressUpdate: (info) => {
-                logger.progress(`预览进度: ${info.message || info}`);
+                const message = info.message || info;
+                const filtered = logger.filterOutput(message);
+                if (filtered) {
+                    logger.progress(filtered);
+                }
             }
         };
 
@@ -201,39 +238,69 @@ async function preview(options = {}) {
             previewOptions.scene = interactiveOptions.scene || config.preview.scene;
         }
 
-        logger.info('预览配置:', {
-            desc: previewOptions.desc,
-            qrcodeFormat: previewOptions.qrcodeFormat,
-            pagePath: previewOptions.pagePath || '默认首页',
-            scene: previewOptions.scene || '默认场景'
-        });
+        // 显示预览配置
+        const configInfo = {
+            '描述': previewOptions.desc,
+            '二维码格式': previewOptions.qrcodeFormat === 'terminal' ? '终端显示' : '图片文件',
+            '预览页面': previewOptions.pagePath || '默认首页',
+            '场景值': previewOptions.scene || '默认场景'
+        };
+
+        if (previewOptions.qrcodeFormat === 'image') {
+            configInfo['输出路径'] = previewOptions.qrcodeOutputDest;
+        }
+
+        logger.config('预览配置', configInfo);
+
+        logger.step(3, '生成预览', '正在生成预览二维码');
 
         const result = await ci.preview(previewOptions);
 
         logger.clearProgress();
-        logger.success('预览成功!');
+        logger.separator();
+
+        // 显示预览结果
+        const resultInfo = {
+            '生成时间': new Date().toLocaleString('zh-CN'),
+            '二维码格式': previewOptions.qrcodeFormat === 'terminal' ? '终端显示' : '图片文件'
+        };
 
         if (previewOptions.qrcodeFormat === 'image' && previewOptions.qrcodeOutputDest) {
-            logger.info(`二维码已保存到: ${previewOptions.qrcodeOutputDest}`);
+            resultInfo['保存路径'] = previewOptions.qrcodeOutputDest;
         }
 
-        if (result.subPackageInfo) {
-            logger.info('分包信息:', result.subPackageInfo);
+        logger.result('预览生成成功', resultInfo);
+
+        // 显示分包信息
+        if (result.subPackageInfo && result.subPackageInfo.length > 0) {
+            logger.info('分包信息:');
+            result.subPackageInfo.forEach((pkg, index) => {
+                console.log(`  ${chalk.gray('•')} ${chalk.cyan(`分包${index + 1}`)}: ${chalk.white(pkg.name || '主包')} (${chalk.yellow(pkg.size || '未知大小')})`);
+            });
         }
 
+        logger.separator();
         return result;
 
     } catch (error) {
         logger.clearProgress();
-        logger.error('预览失败:', error.message);
+        logger.separator();
+        logger.error('预览失败', error.message);
 
         if (error.message.includes('privatekey')) {
-            logger.info('请检查私钥文件是否正确');
+            logger.warn('请检查私钥文件是否存在且正确');
+            logger.info(`私钥路径: ${config.privateKeyPath}`);
         } else if (error.message.includes('appid')) {
-            logger.info('请检查 appid 是否正确');
+            logger.warn('请检查 AppID 是否正确');
+            logger.info(`当前 AppID: ${config.appid}`);
         }
 
+        logger.separator();
         throw error;
+    } finally {
+        // 恢复原始的console.log和process.stdout.write
+        console.log = originalConsoleLog;
+        process.stdout.write = originalStdoutWrite;
     }
 }
 
@@ -271,7 +338,8 @@ function getUploadConfig(config, options = {}) {
 
 // 构建npm功能
 async function buildNpm(options = {}) {
-    logger.info('开始构建npm...');
+    logger.separator('构建npm');
+    logger.step(1, '初始化配置', '加载配置文件并检查构建环境');
 
     const config = loadConfig();
 
@@ -288,15 +356,19 @@ async function buildNpm(options = {}) {
             ignores: options.ignores || config.buildNpm?.ignores || [],
             reporter: (infos) => {
                 if (options.verbose || config.buildNpm?.verbose) {
-                    logger.info('构建信息:', infos);
+                    logger.debug('构建详细信息:', infos);
                 }
             }
         };
 
-        logger.info('构建npm配置:', {
-            ignores: buildOptions.ignores.length > 0 ? buildOptions.ignores : '无排除规则',
-            verbose: options.verbose || config.buildNpm?.verbose || false
-        });
+        // 显示构建配置
+        const configInfo = {
+            '排除规则': buildOptions.ignores.length > 0 ? buildOptions.ignores.join(', ') : '无',
+            '详细模式': options.verbose || config.buildNpm?.verbose || false
+        };
+        logger.config('构建配置', configInfo);
+
+        logger.step(2, '检测构建方式', '分析项目配置选择最佳构建策略');
 
         let warnings;
 
@@ -311,17 +383,19 @@ async function buildNpm(options = {}) {
 
         // 检查是否有packNpmRelationList配置，如果有则优先使用手动构建
         if (projectConfig.setting?.packNpmRelationList && projectConfig.setting.packNpmRelationList.length > 0) {
-            logger.info('检测到npm构建关系配置，使用 packNpmManually 方式构建');
+            logger.info('检测到npm构建关系配置，使用手动构建方式');
+            logger.step(3, '手动构建npm', '根据配置的关系列表构建npm包');
 
             // 使用手动构建npm的方式
             const relationList = projectConfig.setting.packNpmRelationList;
             const results = [];
 
-            for (const relation of relationList) {
+            for (let i = 0; i < relationList.length; i++) {
+                const relation = relationList[i];
                 const packageJsonPath = path.resolve(config.projectPath, relation.packageJsonPath);
                 const miniprogramNpmDistDir = path.resolve(config.projectPath, relation.miniprogramNpmDistDir);
 
-                logger.info(`构建npm包: ${packageJsonPath} -> ${miniprogramNpmDistDir}`);
+                logger.progress(`构建第 ${i + 1}/${relationList.length} 个npm包`);
 
                 const result = await ci.packNpmManually({
                     packageJsonPath,
@@ -330,7 +404,7 @@ async function buildNpm(options = {}) {
                 });
 
                 results.push(result);
-                logger.info(`构建结果: 小程序包数量=${result.miniProgramPackNum}, 其他包数量=${result.otherNpmPackNum}`);
+                logger.info(`包 ${i + 1}: 小程序包=${result.miniProgramPackNum}, 其他包=${result.otherNpmPackNum}`);
             }
 
             // 合并所有警告
@@ -340,18 +414,20 @@ async function buildNpm(options = {}) {
 
         } else {
             // 使用标准构建npm的方式
-            logger.info('使用标准构建npm方式');
+            logger.info('使用标准构建方式');
+            logger.step(3, '标准构建npm', '使用微信开发者工具标准构建流程');
+
             try {
                 warnings = await ci.packNpm(project, buildOptions);
             } catch (error) {
                 if (error.message.includes('__NO_NODE_MODULES__')) {
-                    logger.warn('标准构建方式失败，尝试使用手动构建方式...');
+                    logger.warn('标准构建失败，切换到手动构建方式');
 
                     // 如果标准方式失败，尝试手动构建到项目根目录
                     const packageJsonPath = path.resolve(config.projectPath, 'package.json');
                     const miniprogramNpmDistDir = config.projectPath; // 构建到项目根目录
 
-                    logger.info(`构建npm包: ${packageJsonPath} -> ${miniprogramNpmDistDir}`);
+                    logger.progress('使用手动构建方式重试');
 
                     const result = await ci.packNpmManually({
                         packageJsonPath,
@@ -359,54 +435,75 @@ async function buildNpm(options = {}) {
                         ignores: buildOptions.ignores
                     });
 
-                    logger.info(`构建结果: 小程序包数量=${result.miniProgramPackNum}, 其他包数量=${result.otherNpmPackNum}`);
                     warnings = result.warnList || [];
+                    logger.info(`构建结果: 小程序包=${result.miniProgramPackNum}, 其他包=${result.otherNpmPackNum}`);
                 } else {
                     throw error;
                 }
             }
         }
 
-        logger.success('构建npm成功!');
+        logger.clearProgress();
+        logger.separator();
 
+        // 显示构建结果
+        const resultInfo = {
+            '构建时间': new Date().toLocaleString('zh-CN'),
+            '警告数量': warnings ? warnings.length : 0
+        };
+
+        logger.result('构建npm成功', resultInfo);
+
+        // 显示警告信息
         if (warnings && warnings.length > 0) {
-            logger.warn(`构建完成，但有 ${warnings.length} 个警告:`);
+            logger.warn(`发现 ${warnings.length} 个构建警告:`);
             warnings.forEach((warning, index) => {
-                logger.warn(`${index + 1}. ${warning.msg}`);
+                console.log(`  ${chalk.yellow(`${index + 1}.`)} ${chalk.white(warning.msg)}`);
                 if (warning.code) {
-                    logger.warn(`   代码: ${warning.code}`);
+                    console.log(`     ${chalk.gray('代码:')} ${chalk.cyan(warning.code)}`);
                 }
                 if (warning.jsPath) {
-                    logger.warn(`   位置: ${warning.jsPath}:${warning.startLine}-${warning.endLine}`);
+                    console.log(`     ${chalk.gray('位置:')} ${chalk.cyan(warning.jsPath)}:${chalk.yellow(warning.startLine)}-${chalk.yellow(warning.endLine)}`);
                 }
-                logger.warn('   ---------------');
+                if (index < warnings.length - 1) {
+                    console.log('');
+                }
             });
         } else {
-            logger.info('构建过程无警告');
+            logger.success('构建过程无警告');
         }
 
+        logger.separator();
         return warnings;
 
     } catch (error) {
-        logger.error('构建npm失败:', error.message);
+        logger.clearProgress();
+        logger.separator();
+        logger.error('构建npm失败', error.message);
 
         if (error.message.includes('privatekey')) {
-            logger.info('请检查私钥文件是否正确');
+            logger.warn('请检查私钥文件是否存在且正确');
+            logger.info(`私钥路径: ${config.privateKeyPath}`);
         } else if (error.message.includes('appid')) {
-            logger.info('请检查 appid 是否正确');
+            logger.warn('请检查 AppID 是否正确');
+            logger.info(`当前 AppID: ${config.appid}`);
         } else if (error.message.includes('package.json')) {
-            logger.info('请检查项目中是否存在 package.json 文件');
+            logger.warn('请检查项目中是否存在 package.json 文件');
+            logger.info(`项目路径: ${config.projectPath}`);
         } else if (error.message.includes('node_modules')) {
-            logger.info('请检查项目中是否存在 node_modules 目录');
+            logger.warn('请检查项目中是否存在 node_modules 目录');
+            logger.info('请先运行 npm install 或 pnpm install 安装依赖');
         }
 
+        logger.separator();
         throw error;
     }
 }
 
 // 上传功能
 async function upload(options = {}) {
-    logger.info('开始上传小程序...');
+    logger.separator('小程序上传');
+    logger.step(1, '初始化配置', '加载配置文件并验证参数');
 
     const config = loadConfig();
 
@@ -415,29 +512,79 @@ async function upload(options = {}) {
         process.exit(1);
     }
 
+    // 重写console.log和process.stdout.write来过滤冗长输出
+    const originalConsoleLog = console.log;
+    const originalStdoutWrite = process.stdout.write;
+
+    console.log = function (...args) {
+        const message = args.join(' ');
+        const filtered = logger.filterOutput(message);
+        if (filtered && filtered !== message) {
+            originalConsoleLog.call(console, chalk.blue(logger.prefix), filtered);
+        } else if (filtered) {
+            originalConsoleLog.apply(console, args);
+        }
+        // 如果filtered为null，则不输出任何内容
+    };
+
+    process.stdout.write = function (chunk, encoding, callback) {
+        if (typeof chunk === 'string') {
+            const filtered = logger.filterOutput(chunk);
+            if (filtered && filtered !== chunk) {
+                return originalStdoutWrite.call(this, chalk.blue(logger.prefix) + ' ' + filtered, encoding, callback);
+            } else if (filtered) {
+                return originalStdoutWrite.call(this, chunk, encoding, callback);
+            }
+            // 如果filtered为null，则不输出任何内容
+            if (callback) callback();
+            return true;
+        }
+        return originalStdoutWrite.call(this, chunk, encoding, callback);
+    };
+
     try {
         // 获取上传配置（非交互式）
         const uploadConfig = getUploadConfig(config, options);
-
         const project = createProject(config);
+
+        logger.step(2, '处理版本号', '确定上传版本号');
 
         // 版本号处理逻辑
         let version;
+        let versionInfo = {};
+
         if (uploadConfig.version) {
             // 如果明确指定了版本号，使用指定的版本号
             version = uploadConfig.version;
-            logger.info(`使用指定版本号: ${version}`);
+            versionInfo = {
+                type: '指定版本',
+                version: version,
+                source: '命令行参数'
+            };
         } else if (uploadConfig.autoIncrement !== false) {
             // 默认自动递增版本号（除非明确设置 --no-auto-increment）
             const incrementType = uploadConfig.incrementType || 'patch';
             const currentVersion = getVersion(config);
             version = getAndIncrementVersion(config, incrementType);
-            logger.info(`版本号自动递增: ${currentVersion} → ${version} (${incrementType})`);
+            versionInfo = {
+                type: '自动递增',
+                '当前版本': currentVersion,
+                '新版本': version,
+                '递增类型': incrementType
+            };
         } else {
             // 不自动递增，使用当前版本号
             version = getVersion(config);
-            logger.info(`使用当前版本号: ${version}`);
+            versionInfo = {
+                type: '当前版本',
+                version: version,
+                source: 'package.json'
+            };
         }
+
+        logger.config('版本信息', versionInfo);
+
+        logger.step(3, '准备上传参数', '配置上传选项和描述信息');
 
         // 使用Git提交信息作为描述
         const desc = uploadConfig.desc;
@@ -449,47 +596,85 @@ async function upload(options = {}) {
             setting: config.setting,
             robot: uploadConfig.robot,
             onProgressUpdate: (info) => {
-                logger.progress(`上传进度: ${info.message || info}`);
+                const message = info.message || info;
+                const filtered = logger.filterOutput(message);
+                if (filtered) {
+                    logger.progress(filtered);
+                }
             }
         };
 
-        logger.info('上传配置:', {
-            version: uploadOptions.version,
-            robot: uploadOptions.robot,
-            gitUser: uploadConfig.gitUser.name || '未知用户',
-            commitsCount: uploadConfig.commits.length
-        });
+        // 显示上传配置
+        const configInfo = {
+            '版本号': uploadOptions.version,
+            '机器人编号': uploadOptions.robot,
+            '开发者': uploadConfig.gitUser.name || '未知用户',
+            '提交数量': uploadConfig.commits.length + ' 个'
+        };
+        logger.config('上传配置', configInfo);
 
-        logger.info('上传描述:', uploadOptions.desc);
+        // 显示上传描述（如果太长则截断显示）
+        const maxDescLength = 100;
+        const displayDesc = desc.length > maxDescLength
+            ? desc.substring(0, maxDescLength) + '...'
+            : desc;
+        logger.info('上传描述:');
+        console.log(`  ${chalk.gray(displayDesc)}`);
+
+        logger.step(4, '开始上传', '正在上传小程序到微信服务器');
 
         const result = await ci.upload(uploadOptions);
 
         logger.clearProgress();
-        logger.success('上传成功!');
-        logger.info('上传结果:', {
-            version: result.version || version,
-            desc: result.desc || desc
-        });
+        logger.separator();
 
-        if (result.subPackageInfo) {
-            logger.info('分包信息:', result.subPackageInfo);
+        // 显示上传结果
+        const resultInfo = {
+            '版本号': result.version || version,
+            '上传时间': new Date().toLocaleString('zh-CN'),
+            '机器人': uploadOptions.robot
+        };
+
+        logger.result('上传成功', resultInfo);
+
+        // 显示分包信息
+        if (result.subPackageInfo && result.subPackageInfo.length > 0) {
+            logger.info('分包信息:');
+            result.subPackageInfo.forEach((pkg, index) => {
+                console.log(`  ${chalk.gray('•')} ${chalk.cyan(`分包${index + 1}`)}: ${chalk.white(pkg.name || '主包')} (${chalk.yellow(pkg.size || '未知大小')})`);
+            });
         }
 
+        logger.separator();
         return result;
 
     } catch (error) {
         logger.clearProgress();
-        logger.error('上传失败:', error.message);
+        logger.separator();
+        logger.error('上传失败', error.message);
 
+        // 提供具体的错误提示
         if (error.message.includes('privatekey')) {
-            logger.info('请检查私钥文件是否正确');
+            logger.warn('请检查私钥文件是否存在且正确');
+            logger.info(`私钥路径: ${config.privateKeyPath}`);
         } else if (error.message.includes('appid')) {
-            logger.info('请检查 appid 是否正确');
+            logger.warn('请检查 AppID 是否正确');
+            logger.info(`当前 AppID: ${config.appid}`);
         } else if (error.message.includes('robot')) {
-            logger.info('请检查机器人编号是否正确 (1-30)');
+            logger.warn('请检查机器人编号是否正确 (1-30)');
+            logger.info(`当前机器人编号: ${options.robot || config.robot || 1}`);
+        } else if (error.message.includes('version')) {
+            logger.warn('版本号可能存在问题');
+        } else if (error.message.includes('network') || error.message.includes('timeout')) {
+            logger.warn('网络连接问题，请检查网络或稍后重试');
         }
 
+        logger.separator();
         throw error;
+    } finally {
+        // 恢复原始的console.log和process.stdout.write
+        console.log = originalConsoleLog;
+        process.stdout.write = originalStdoutWrite;
     }
 }
 

@@ -1,26 +1,26 @@
 {
-    "name": "miniprogram-ts-less-quickstart",
-    "version": "1.2.6",
-    "description": "",
-    "scripts": {
-        "preview": "node cli/index.js preview",
-        "upload": "node cli/index.js upload",
-        "build-npm": "node cli/index.js build-npm",
-        "ci:help": "node cli/index.js help"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "",
-    "devDependencies": {
-        "@babel/helper-string-parser": "^7.27.1",
-        "@babel/helper-validator-identifier": "^7.27.1",
-        "chalk": "4",
-        "inquirer": "^8.2.6",
-        "miniprogram-api-typings": "^2.8.3-1",
-        "miniprogram-ci": "^2.1.14",
-        "to-fast-properties": "2.0.0"
-    },
-    "dependencies": {
-        "@vant/weapp": "^1.11.6"
-    }
+  "name": "miniprogram-ts-less-quickstart",
+  "version": "1.2.10",
+  "description": "",
+  "scripts": {
+    "preview": "node cli/index.js preview",
+    "upload": "node cli/index.js upload",
+    "build-npm": "node cli/index.js build-npm",
+    "ci:help": "node cli/index.js help"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "devDependencies": {
+    "@babel/helper-string-parser": "^7.27.1",
+    "@babel/helper-validator-identifier": "^7.27.1",
+    "chalk": "4",
+    "inquirer": "^8.2.6",
+    "miniprogram-api-typings": "^2.8.3-1",
+    "miniprogram-ci": "^2.1.14",
+    "to-fast-properties": "2.0.0"
+  },
+  "dependencies": {
+    "@vant/weapp": "^1.11.6"
+  }
 }
