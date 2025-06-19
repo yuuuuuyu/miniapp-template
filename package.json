@@ -1,7 +1,7 @@
 {
   "name": "miniprogram-ts-less-quickstart",
   "version": "1.2.10",
-  "description": "",
+  "description": "小程序快速开发模板",
   "scripts": {
     "preview": "node cli/index.js preview",
     "upload": "node cli/index.js upload",

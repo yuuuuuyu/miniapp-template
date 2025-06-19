@@ -1,13 +1,11 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 echo "🔍 执行 pre-commit 检查..."
 
-# 获取暂存的文件
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|ts)$')
+# 获取暂存的 JavaScript/TypeScript 文件
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|ts)$' || true)
 
 if [ -n "$STAGED_FILES" ]; then
   echo "📝 检查代码格式和语法..."
+  echo "检查文件: $STAGED_FILES"
 
   # 运行 ESLint 检查暂存的文件
   echo "🔧 运行 ESLint 检查..."
