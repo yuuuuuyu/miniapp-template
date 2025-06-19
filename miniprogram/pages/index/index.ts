@@ -17,7 +17,7 @@ Component({
   methods: {
     // 事件处理函数
     toCases() {
-        app.globalData.fromIndex = true;
+      console.log(123)
       wx.navigateTo({
         url: '../cases/cases',
       })
