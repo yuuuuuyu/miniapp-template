@@ -18,6 +18,7 @@ Component({
     // 事件处理函数
     toCases() {
       console.log(123)
+      const test = 'should use const'; // 这会触发 ESLint 错误
       wx.navigateTo({
         url: '../cases/cases',
       })
