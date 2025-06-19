@@ -9,6 +9,8 @@
 - ✅ **构建npm**: 对应开发者工具的构建npm功能
 - ✅ **配置管理**: 灵活的配置文件支持
 - ✅ **环境支持**: 支持开发、测试、生产环境配置
+- ✨ **规范化日志**: 支持多种更新日志格式（简单/详细/变更日志）
+- ✨ **智能格式化**: 自动按提交类型分组，生成专业的版本说明
 
 ## 安装
 
@@ -93,6 +95,37 @@ node cli/index.js upload --version 1.0.1
 node cli/index.js upload --desc "手动指定的描述" --robot 2
 ```
 
+#### 更新日志格式 🆕
+
+支持三种更新日志格式，让版本描述更加规范：
+
+```bash
+# 简单格式：只显示最新提交
+node cli/index.js upload --desc-format simple
+
+# 详细格式：显示最近几条提交（默认）
+node cli/index.js upload --desc-format detailed --commit-count 5
+
+# 变更日志格式：按类型分组显示（推荐）
+node cli/index.js upload --desc-format changelog
+
+# 自定义参数
+node cli/index.js upload \
+  --desc-format changelog \
+  --commit-count 8 \
+  --desc-max-length 400 \
+  --no-include-hash
+```
+
+**格式效果预览：**
+
+```bash
+# 查看不同格式的效果演示
+npm run demo:changelog
+```
+
+详细配置说明请参考：[更新日志格式配置指南](docs/CHANGELOG_FORMATS.md)
+
 ## 命令行选项
 
 ### 通用选项
@@ -117,6 +150,10 @@ node cli/index.js upload --desc "手动指定的描述" --robot 2
 - `--robot <number>`: CI机器人编号 (1-30)
 - `--increment-type <type>`: 版本递增类型 (major|minor|patch)
 - `--no-auto-increment`: 禁用自动版本递增
+- `--desc-format <type>`: 描述格式 (simple|detailed|changelog)
+- `--commit-count <number>`: 获取提交记录数量
+- `--desc-max-length <number>`: 描述最大长度
+- `--no-include-hash`: 不包含提交哈希值
 
 ## 环境变量
 

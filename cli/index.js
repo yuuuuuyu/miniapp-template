@@ -307,8 +307,18 @@ async function preview(options = {}) {
 // 获取上传配置（非交互式）
 function getUploadConfig(config, options = {}) {
     // 获取Git提交信息作为描述
-    const commits = getGitCommits(5);
-    const defaultDesc = formatCommitsForUpload(commits);
+    const commits = getGitCommits(options.commitCount || 5);
+
+    // 确定描述格式
+    const descFormat = options.descFormat || config.upload?.descFormat || 'detailed';
+    const formatOptions = {
+        format: descFormat,
+        maxLength: options.descMaxLength || config.upload?.descMaxLength || 500,
+        includeHash: options.includeHash !== false,
+        groupByType: descFormat === 'changelog'
+    };
+
+    const defaultDesc = formatCommitsForUpload(commits, formatOptions);
 
     // 获取Git用户信息作为默认robot
     const gitUser = getGitUser();
@@ -329,6 +339,10 @@ function getUploadConfig(config, options = {}) {
         // Git信息
         gitUser: gitUser,
         commits: commits,
+
+        // 格式化选项
+        descFormat: descFormat,
+        formatOptions: formatOptions,
 
         ...options
     };
@@ -711,14 +725,23 @@ function parseArgs() {
                 continue;
             }
 
+            if (key === 'no-include-hash') {
+                options.includeHash = false;
+                continue;
+            }
+
             // 处理键值对参数
             const nextArg = args[i + 1];
             if (nextArg && !nextArg.startsWith('--')) {
                 const optionName = key.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 
-                // 特殊处理ignores参数，将逗号分隔的字符串转换为数组
+                // 特殊处理不同类型的参数
                 if (optionName === 'ignores') {
+                    // 逗号分隔的字符串转换为数组
                     options[optionName] = nextArg.split(',').map(pattern => pattern.trim());
+                } else if (optionName === 'commitCount' || optionName === 'descMaxLength' || optionName === 'robot' || optionName === 'scene') {
+                    // 数字类型参数
+                    options[optionName] = parseInt(nextArg, 10);
                 } else {
                     options[optionName] = nextArg;
                 }
@@ -762,6 +785,10 @@ miniprogram-ci CLI 工具
   --robot <number>       CI机器人编号 (1-30，默认: 1)
   --increment-type <type> 版本递增类型 (major|minor|patch，默认: patch)
   --no-auto-increment    禁用自动版本递增
+  --desc-format <type>   描述格式 (simple|detailed|changelog，默认: detailed)
+  --commit-count <number> 获取提交记录数量 (默认: 5)
+  --desc-max-length <number> 描述最大长度 (默认: 500)
+  --no-include-hash      不包含提交哈希值
 
 构建npm选项:
   --ignores <patterns>   指定需要排除的规则 (逗号分隔)
@@ -798,6 +825,15 @@ miniprogram-ci CLI 工具
 
   # 上传小程序 (自定义描述和机器人编号)
   node cli/index.js upload --desc "手动指定的描述" --robot 2
+
+  # 使用变更日志格式的描述
+  node cli/index.js upload --desc-format changelog
+
+  # 使用简单格式的描述（只显示最新提交）
+  node cli/index.js upload --desc-format simple
+
+  # 自定义提交记录数量和描述长度
+  node cli/index.js upload --commit-count 10 --desc-max-length 300
 
   # 使用环境变量
   VERSION=1.0.2 ROBOT=2 node cli/index.js upload

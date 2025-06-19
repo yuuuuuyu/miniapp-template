@@ -79,7 +79,13 @@ module.exports = {
     // 上传配置
     upload: {
         desc: '通过 CI 上传', // 上传描述
-        version: '1.0.0' // 版本号，可通过环境变量 VERSION 覆盖
+        version: '1.0.0', // 版本号，可通过环境变量 VERSION 覆盖
+
+        // 描述格式配置
+        descFormat: 'detailed', // 'simple' | 'detailed' | 'changelog'
+        descMaxLength: 500, // 描述最大长度
+        commitCount: 5, // 获取的提交记录数量
+        includeHash: true // 是否包含提交哈希值
     },
 
     // 构建npm配置

@@ -262,18 +262,112 @@ function getGitUser() {
 /**
  * 格式化Git提交信息为上传描述
  * @param {Array} commits 提交信息数组
+ * @param {object} options 格式化选项
  * @returns {string} 格式化的描述
  */
-function formatCommitsForUpload(commits) {
+function formatCommitsForUpload(commits, options = {}) {
     if (!commits || commits.length === 0) {
         return '通过 CI/CD 自动上传';
     }
 
+    const {
+        format = 'detailed', // 'simple' | 'detailed' | 'changelog'
+        maxLength = 500,
+        includeHash = true,
+        groupByType = false
+    } = options;
+
+    if (format === 'simple') {
+        // 简单格式：只显示最新的提交信息
+        const latestCommit = commits[0];
+        return `${latestCommit.message}${includeHash ? ` (${latestCommit.hash})` : ''}`;
+    }
+
+    if (format === 'changelog') {
+        // 变更日志格式：按类型分组
+        return formatAsChangelog(commits, { maxLength, includeHash });
+    }
+
+    // 详细格式（默认）
     const commitMessages = commits.map((commit, index) => {
-        return `${index + 1}. ${commit.message} (${commit.hash})`;
+        const prefix = `${index + 1}.`;
+        const message = commit.message;
+        const hash = includeHash ? ` (${commit.hash})` : '';
+        return `${prefix} ${message}${hash}`;
     }).join('\n');
 
-    return `最近更新:\n${commitMessages}`;
+    const result = `最近更新:\n${commitMessages}`;
+
+    // 如果超过最大长度，进行截断
+    if (result.length > maxLength) {
+        const truncated = result.substring(0, maxLength - 3) + '...';
+        return truncated;
+    }
+
+    return result;
+}
+
+/**
+ * 将提交信息格式化为变更日志格式
+ * @param {Array} commits 提交信息数组
+ * @param {object} options 选项
+ * @returns {string} 变更日志格式的描述
+ */
+function formatAsChangelog(commits, options = {}) {
+    const { maxLength = 500, includeHash = true } = options;
+
+    // 按提交类型分组
+    const groups = {
+        feat: { title: '✨ 新功能', items: [] },
+        fix: { title: '🐛 问题修复', items: [] },
+        docs: { title: '📝 文档更新', items: [] },
+        style: { title: '💄 样式调整', items: [] },
+        refactor: { title: '♻️ 代码重构', items: [] },
+        perf: { title: '⚡ 性能优化', items: [] },
+        test: { title: '✅ 测试相关', items: [] },
+        build: { title: '📦 构建相关', items: [] },
+        ci: { title: '👷 CI/CD', items: [] },
+        chore: { title: '🔧 其他变更', items: [] }
+    };
+
+    // 解析提交信息并分组
+    commits.forEach(commit => {
+        const message = commit.message;
+        const match = message.match(/^(\w+)(\(.+\))?\s*:\s*(.+)$/);
+
+        if (match) {
+            const [, type, scope, description] = match;
+            const group = groups[type] || groups.chore;
+            const scopeText = scope ? scope : '';
+            const hash = includeHash ? ` (${commit.hash})` : '';
+            group.items.push(`${scopeText}${description}${hash}`);
+        } else {
+            // 不符合规范的提交信息归类到其他变更
+            const hash = includeHash ? ` (${commit.hash})` : '';
+            groups.chore.items.push(`${message}${hash}`);
+        }
+    });
+
+    // 生成变更日志
+    const sections = [];
+    Object.values(groups).forEach(group => {
+        if (group.items.length > 0) {
+            sections.push(`${group.title}:`);
+            group.items.forEach(item => {
+                sections.push(`• ${item}`);
+            });
+            sections.push(''); // 空行分隔
+        }
+    });
+
+    let result = sections.join('\n').trim();
+
+    // 如果超过最大长度，进行截断
+    if (result.length > maxLength) {
+        result = result.substring(0, maxLength - 3) + '...';
+    }
+
+    return result || '通过 CI/CD 自动上传';
 }
 
 module.exports = {
@@ -291,5 +385,6 @@ module.exports = {
     ensureDir,
     getGitCommits,
     getGitUser,
-    formatCommitsForUpload
+    formatCommitsForUpload,
+    formatAsChangelog
 };

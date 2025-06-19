@@ -7,9 +7,10 @@
     "upload": "node cli/index.js upload",
     "build-npm": "node cli/index.js build-npm",
     "ci:help": "node cli/index.js help",
-    "commit": "git-cz",
+    "commit": "git add . && git-cz",
     "prepare": "husky install",
-    "setup-husky": "sh scripts/setup-husky.sh"
+    "setup-husky": "sh scripts/setup-husky.sh",
+    "demo:changelog": "node scripts/demo-changelog-formats.js"
   },
   "keywords": [],
   "author": "",
