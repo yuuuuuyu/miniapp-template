@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 执行 pre-commit 检查..."
+
+# 检查是否有文件需要暂存
+if [ -n "$(git diff --name-only)" ]; then
+  echo "📁 自动暂存修改的文件..."
+  git add .
+  echo "✅ 文件已暂存，可以继续提交"
+fi
+
+echo "✅ Pre-commit 检查完成"
