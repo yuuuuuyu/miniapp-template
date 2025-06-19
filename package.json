@@ -10,7 +10,9 @@
     "commit": "git add . && git-cz",
     "prepare": "husky install",
     "setup-husky": "sh scripts/setup-husky.sh",
-    "demo:changelog": "node scripts/demo-changelog-formats.js"
+    "demo:changelog": "node scripts/demo-changelog-formats.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
@@ -25,14 +27,20 @@
     "@babel/helper-validator-identifier": "^7.27.1",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@types/node": "^24.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1",
     "chalk": "4",
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
     "husky": "^9.1.7",
     "inquirer": "^8.2.6",
     "miniprogram-api-typings": "^2.8.3-1",
     "miniprogram-ci": "^2.1.14",
-    "to-fast-properties": "2.0.0"
+    "to-fast-properties": "2.0.0",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@vant/weapp": "^1.11.6"

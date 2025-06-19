@@ -3,11 +3,25 @@
 
 echo "🔍 执行 pre-commit 检查..."
 
-# 检查是否有文件需要暂存
-if [ -n "$(git diff --name-only)" ]; then
-  echo "📁 自动暂存修改的文件..."
-  git add .
-  echo "✅ 文件已暂存，可以继续提交"
+# 获取暂存的文件
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|ts)$')
+
+if [ -n "$STAGED_FILES" ]; then
+  echo "📝 检查代码格式和语法..."
+
+  # 运行 ESLint 检查暂存的文件
+  echo "🔧 运行 ESLint 检查..."
+  npx eslint $STAGED_FILES
+
+  if [ $? -ne 0 ]; then
+    echo "❌ ESLint 检查失败！请修复代码问题后再提交。"
+    echo "💡 提示：运行 'npm run lint:fix' 可以自动修复部分问题"
+    exit 1
+  fi
+
+  echo "✅ ESLint 检查通过"
+else
+  echo "ℹ️  没有 JavaScript/TypeScript 文件需要检查"
 fi
 
 echo "✅ Pre-commit 检查完成"
