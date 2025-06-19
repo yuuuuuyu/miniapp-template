@@ -1,18 +1,19 @@
 # 更新日志格式配置指南
 
-本文档介绍如何配置小程序上传时的更新日志格式，让您的版本描述更加规范和易读。
+本文档详细介绍小程序上传时的更新日志格式配置，让您的版本描述更加规范和易读。
 
-## 支持的格式类型
+## 📋 支持的格式类型
 
 ### 1. 简单格式 (simple)
-只显示最新的一条提交信息，适合快速迭代的场景。
+**适用场景**：快速迭代的开发阶段
+**特点**：只显示最新的一条提交信息，输出简洁
 
 **配置方式：**
 ```bash
 # 命令行
 node cli/index.js upload --desc-format simple
 
-# 或在 ci.config.js 中配置
+# 配置文件
 upload: {
     descFormat: 'simple'
 }
@@ -24,14 +25,15 @@ feat(pages): 添加用户个人中心页面 (a1b2c3d)
 ```
 
 ### 2. 详细格式 (detailed) - 默认
-显示最近几条提交的详细列表，适合常规发布。
+**适用场景**：常规发布和测试阶段
+**特点**：显示最近几条提交的详细列表，提供完整的变更历史
 
 **配置方式：**
 ```bash
 # 命令行
 node cli/index.js upload --desc-format detailed --commit-count 5
 
-# 或在 ci.config.js 中配置
+# 配置文件
 upload: {
     descFormat: 'detailed',
     commitCount: 5
@@ -49,14 +51,15 @@ upload: {
 ```
 
 ### 3. 变更日志格式 (changelog) - 推荐
-按提交类型分组显示，符合标准变更日志格式，适合正式发布。
+**适用场景**：正式发布，提供专业的版本说明
+**特点**：按提交类型自动分组显示，符合标准变更日志格式
 
 **配置方式：**
 ```bash
 # 命令行
 node cli/index.js upload --desc-format changelog
 
-# 或在 ci.config.js 中配置
+# 配置文件
 upload: {
     descFormat: 'changelog'
 }
@@ -82,23 +85,23 @@ upload: {
 • 更新依赖版本 (e5f6g7h)
 ```
 
-## 配置选项详解
+## ⚙️ 配置选项详解
 
 ### 基础配置
 
-在 `ci.config.js` 中的 `upload` 部分添加以下配置：
+在 `ci.config.js` 中的 `upload` 部分添加配置：
 
 ```javascript
 upload: {
     // 描述格式：'simple' | 'detailed' | 'changelog'
     descFormat: 'changelog',
-    
+
     // 描述最大长度（超出会自动截断）
     descMaxLength: 500,
-    
+
     // 获取的提交记录数量
     commitCount: 5,
-    
+
     // 是否包含提交哈希值
     includeHash: true
 }
@@ -117,55 +120,52 @@ node cli/index.js upload \
   --no-include-hash
 ```
 
-## 提交信息规范
+### 参数说明
 
-为了获得最佳的变更日志效果，建议遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `descFormat` | string | `'detailed'` | 描述格式类型 |
+| `commitCount` | number | `5` | 获取的提交记录数量 |
+| `descMaxLength` | number | `500` | 描述最大长度 |
+| `includeHash` | boolean | `true` | 是否包含提交哈希值 |
 
-### 提交类型说明
+## 📝 提交信息规范
 
-| 类型 | 图标 | 说明 | 示例 |
-|------|------|------|------|
-| `feat` | ✨ | 新功能 | `feat(pages): 添加用户设置页面` |
-| `fix` | 🐛 | 问题修复 | `fix(api): 修复数据加载失败问题` |
-| `docs` | 📝 | 文档更新 | `docs: 更新部署指南` |
-| `style` | 💄 | 样式调整 | `style(ui): 优化主题色彩搭配` |
-| `refactor` | ♻️ | 代码重构 | `refactor(utils): 重构工具函数` |
-| `perf` | ⚡ | 性能优化 | `perf(api): 优化数据查询性能` |
-| `test` | ✅ | 测试相关 | `test: 添加用户模块单元测试` |
-| `build` | 📦 | 构建相关 | `build: 升级webpack配置` |
-| `ci` | 👷 | CI/CD | `ci: 添加自动部署流程` |
-| `chore` | 🔧 | 其他变更 | `chore: 更新依赖包版本` |
+为了获得最佳的变更日志效果，建议遵循项目的提交规范。详细说明请参考 [COMMIT_GUIDE.md](COMMIT_GUIDE.md)。
 
-### 提交信息格式
+### 提交类型与图标映射
 
-```
-<type>(<scope>): <description>
+变更日志格式会根据提交类型自动添加相应图标：
 
-[optional body]
+| 类型 | 图标 | 分组名称 |
+|------|------|----------|
+| `feat` | ✨ | 新功能 |
+| `fix` | 🐛 | 问题修复 |
+| `docs` | 📝 | 文档更新 |
+| `style` | 💄 | 样式调整 |
+| `refactor` | ♻️ | 代码重构 |
+| `perf` | ⚡ | 性能优化 |
+| `test` | ✅ | 测试相关 |
+| `build` | 📦 | 构建相关 |
+| `ci` | 👷 | CI/CD |
+| `chore` | 🔧 | 其他变更 |
 
-[optional footer]
-```
-
-**示例：**
-```
-feat(pages): 添加用户个人中心页面
-
-- 实现用户信息展示
-- 添加头像上传功能
-- 支持个人信息编辑
-
-Closes #123
+### 快速提交
+```bash
+npm run commit  # 使用交互式提交工具
 ```
 
-## 最佳实践
+## 🎯 最佳实践
 
-### 1. 选择合适的格式
+### 1. 不同阶段使用不同格式
 
-- **开发阶段**：使用 `simple` 格式，快速迭代
-- **测试阶段**：使用 `detailed` 格式，便于测试人员了解变更
-- **生产发布**：使用 `changelog` 格式，提供专业的版本说明
+| 阶段 | 推荐格式 | 原因 |
+|------|----------|------|
+| **开发阶段** | `simple` | 快速迭代，简洁明了 |
+| **测试阶段** | `detailed` | 便于测试人员了解变更 |
+| **生产发布** | `changelog` | 提供专业的版本说明 |
 
-### 2. 合理设置参数
+### 2. 环境配置示例
 
 ```javascript
 // 开发环境配置
@@ -185,66 +185,55 @@ upload: {
 }
 ```
 
-### 3. 环境变量支持
-
-可以通过环境变量动态调整配置：
-
-```bash
-# 设置环境变量
-export DESC_FORMAT=changelog
-export COMMIT_COUNT=8
-export DESC_MAX_LENGTH=400
-
-# 运行上传
-npm run upload
-```
-
-### 4. CI/CD 集成
-
-在 `.gitlab-ci.yml` 或 GitHub Actions 中使用：
+### 3. CI/CD 集成
 
 ```yaml
-# GitLab CI
+# GitHub Actions 示例
+- name: Upload to WeChat
+  run: |
+    node cli/index.js upload \
+      --desc-format changelog \
+      --commit-count 5
+
+# GitLab CI 示例
 deploy:
   script:
-    - npm run upload -- --desc-format changelog --commit-count 5
-
-# GitHub Actions
-- name: Upload to WeChat
-  run: npm run upload -- --desc-format changelog
+    - npm run upload -- --desc-format changelog
 ```
 
-## 故障排除
+## 🔧 故障排除
 
 ### 常见问题
 
-1. **提交信息不符合规范**
-   - 解决：使用 `npm run commit` 进行规范化提交
-   - 或者手动修改提交信息格式
+**Q: 描述过长被截断怎么办？**
+A: 调整 `descMaxLength` 参数或减少 `commitCount` 数量
 
-2. **描述过长被截断**
-   - 解决：调整 `descMaxLength` 参数
-   - 或者减少 `commitCount` 数量
+**Q: 变更日志格式显示异常？**
+A: 检查提交信息是否符合规范，不符合规范的提交会归类到"其他变更"
 
-3. **变更日志格式显示异常**
-   - 解决：检查提交信息是否符合 Conventional Commits 规范
-   - 不符合规范的提交会归类到"其他变更"
-
-### 调试模式
-
-启用调试模式查看详细信息：
-
+**Q: 如何查看详细的处理过程？**
+A: 启用调试模式：
 ```bash
 DEBUG=1 node cli/index.js upload --desc-format changelog
 ```
 
-## 总结
+### 演示工具
 
-通过合理配置更新日志格式，可以让您的小程序版本管理更加专业和规范。建议：
+查看不同格式的效果：
+```bash
+npm run demo:changelog  # 如果项目中有此脚本
+```
 
-1. 在开发阶段使用简单格式提高效率
-2. 在正式发布时使用变更日志格式提供清晰的版本说明
-3. 结合 Conventional Commits 规范获得最佳效果
-4. 根据团队需求调整配置参数
+## 📚 相关文档
 
-这样既能满足快速开发的需求，又能为用户和团队成员提供清晰的版本变更信息。
+- **[COMMIT_GUIDE.md](COMMIT_GUIDE.md)** - Git 提交规范详细指南
+- **[README.md](README.md)** - 项目文档导航
+
+## 💡 总结
+
+通过合理配置更新日志格式，让小程序版本管理更加专业：
+
+1. **开发阶段** - 使用简单格式提高效率
+2. **正式发布** - 使用变更日志格式提供清晰说明
+3. **结合规范** - 配合 Conventional Commits 获得最佳效果
+4. **灵活配置** - 根据团队需求调整参数

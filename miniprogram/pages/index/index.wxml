@@ -14,7 +14,6 @@
       </div>
     </view>
 
-
     <view style="width: 687.6rpx; padding: 28.8rpx; box-sizing: border-box; border-radius:21.6rpx; background-color: white;">
       <text style="font-weight: 500; color: rgba(0,0,0,0.9); font-size: 27rpx;">框架特性</text>
       <view style="font-weight: 400; color: rgba(0,0,0,0.3); font-size: 27rpx; margin-top: 14.5rpx; margin-bottom: 50rpx;">多端模式开发App，不影响小程序开发</view>
