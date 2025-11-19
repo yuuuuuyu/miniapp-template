@@ -507,6 +507,121 @@ async function createPage(pageName, options = {}) {
     }
 }
 
+// 删除页面功能
+async function deletePage(pageName, options = {}) {
+    logger.separator('删除小程序页面');
+
+    if (!pageName) {
+        logger.error('请指定页面名称');
+        logger.info('用法: node cli/index.js delete-page <页面名称>');
+        process.exit(1);
+    }
+
+    logger.step(1, '验证页面名称', '检查页面名称格式');
+
+    // 验证页面名称格式
+    if (!/^[a-zA-Z0-9_-]+$/.test(pageName)) {
+        logger.error('页面名称只能包含字母、数字、下划线和中划线');
+        process.exit(1);
+    }
+
+    logger.step(2, '检查页面路径', '确认页面是否存在');
+
+    // 获取项目路径
+    const projectPath = path.resolve(__dirname, '../miniprogram');
+    const pagePath = path.join(projectPath, 'pages', pageName);
+
+    // 检查页面是否存在
+    if (!fs.existsSync(pagePath)) {
+        logger.error(`页面不存在: pages/${pageName}`);
+        process.exit(1);
+    }
+
+    logger.step(3, '确认删除操作', '请确认是否删除页面');
+
+    // 如果不是强制删除模式，需要确认
+    if (!options.force) {
+        const answer = await inquirer.prompt([{
+            type: 'confirm',
+            name: 'confirmDelete',
+            message: `确定要删除页面 "${pageName}" 吗？此操作不可恢复。`,
+            default: false
+        }]);
+
+        if (!answer.confirmDelete) {
+            logger.info('已取消删除操作');
+            logger.separator();
+            process.exit(0);
+        }
+    }
+
+    logger.step(4, '删除页面文件', '移除页面目录及所有文件');
+
+    try {
+        // 检查要删除的文件
+        const files = ['ts', 'json', 'wxml', 'scss'];
+        const existingFiles = [];
+
+        files.forEach(ext => {
+            const filePath = path.join(pagePath, `${pageName}.${ext}`);
+            if (fs.existsSync(filePath)) {
+                existingFiles.push(`${pageName}.${ext}`);
+            }
+        });
+
+        // 删除页面目录
+        fs.rmSync(pagePath, { recursive: true, force: true });
+        logger.success(`删除目录: pages/${pageName}`);
+
+        existingFiles.forEach(file => {
+            logger.info(`  - 已删除: ${file}`);
+        });
+
+        logger.step(5, '更新配置文件', '从 app.json 中移除页面路径');
+
+        // 更新 app.json
+        const appJsonPath = path.join(projectPath, 'app.json');
+        const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
+
+        // 移除页面路径
+        const pagePathToRemove = `pages/${pageName}/${pageName}`;
+        const originalLength = appJson.pages.length;
+        appJson.pages = appJson.pages.filter(page => page !== pagePathToRemove);
+
+        if (appJson.pages.length < originalLength) {
+            fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, '\t'), 'utf8');
+            logger.success(`页面路径已从 app.json 中移除: ${pagePathToRemove}`);
+        } else {
+            logger.warn(`页面路径未在 app.json 中找到: ${pagePathToRemove}`);
+        }
+
+        logger.separator();
+
+        // 显示删除结果
+        const resultInfo = {
+            '页面名称': pageName,
+            '页面路径': `pages/${pageName}`,
+            '删除时间': new Date().toLocaleString('zh-CN'),
+            '删除文件数': `${existingFiles.length} 个文件`
+        };
+
+        logger.result('页面删除成功', resultInfo);
+        logger.separator();
+
+        return {
+            pageName,
+            pagePath,
+            deletedFiles: existingFiles
+        };
+
+    } catch (error) {
+        logger.separator();
+        logger.error('删除页面失败', error.message);
+        logger.separator();
+        throw error;
+    }
+}
+
 // 构建npm功能
 async function buildNpm(options = {}) {
     logger.separator('构建npm');
@@ -861,6 +976,16 @@ function parseArgs() {
         return { command, options };
     }
 
+    // 对于 delete-page 命令，第二个参数是页面名称
+    if (command === 'delete-page') {
+        options.pageName = args[1];
+        // 检查是否有 --force 参数
+        if (args.includes('--force') || args.includes('-f')) {
+            options.force = true;
+        }
+        return { command, options };
+    }
+
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
 
@@ -929,6 +1054,7 @@ miniprogram-ci CLI 工具
   upload                 上传小程序
   build-npm              构建npm (对应开发者工具的构建npm功能)
   create-page <name>     创建新页面 (自动生成ts/json/wxml/scss文件并更新app.json)
+  delete-page <name>     删除页面 (删除页面文件和目录，并从app.json中移除)
   help                   显示帮助信息
 
 通用选项:
@@ -937,6 +1063,10 @@ miniprogram-ci CLI 工具
 
 创建页面选项:
   <name>                 页面名称 (必需，只能包含字母、数字、下划线和中划线)
+
+删除页面选项:
+  <name>                 页面名称 (必需)
+  --force, -f            强制删除，不需要确认
 
 预览选项:
   --desc <string>        预览描述
@@ -972,6 +1102,13 @@ miniprogram-ci CLI 工具
   # 创建新页面
   node cli/index.js create-page my-page
   node cli/index.js create-page user-profile
+
+  # 删除页面 (交互式确认)
+  node cli/index.js delete-page my-page
+
+  # 强制删除页面 (不需要确认)
+  node cli/index.js delete-page my-page --force
+  node cli/index.js delete-page my-page -f
 
   # 交互式预览小程序 (默认模式)
   node cli/index.js preview
@@ -1042,6 +1179,10 @@ async function main() {
                 await createPage(options.pageName, options);
                 break;
 
+            case 'delete-page':
+                await deletePage(options.pageName, options);
+                break;
+
             case 'help':
             case '--help':
             case '-h':
@@ -1073,6 +1214,7 @@ module.exports = {
     upload,
     buildNpm,
     createPage,
+    deletePage,
     loadConfig,
     createProject
 };

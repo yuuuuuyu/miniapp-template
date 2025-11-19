@@ -7,6 +7,7 @@
         "upload": "node cli/index.js upload",
         "build-npm": "node cli/index.js build-npm",
         "create-page": "node cli/index.js create-page",
+        "delete-page": "node cli/index.js delete-page",
         "ci:help": "node cli/index.js help",
         "commit": "git add . && git-cz && git push",
         "prepare": "husky install",
