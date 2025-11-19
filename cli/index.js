@@ -7,6 +7,7 @@
 
 const ci = require('miniprogram-ci');
 const path = require('path');
+const fs = require('fs');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const logger = require('./utils/logger');
@@ -349,6 +350,162 @@ function getUploadConfig(config, options = {}) {
 }
 
 
+
+// 创建页面功能
+async function createPage(pageName, options = {}) {
+    logger.separator('创建小程序页面');
+
+    if (!pageName) {
+        logger.error('请指定页面名称');
+        logger.info('用法: node cli/index.js create-page <页面名称>');
+        process.exit(1);
+    }
+
+    logger.step(1, '验证页面名称', '检查页面名称格式');
+
+    // 验证页面名称格式
+    if (!/^[a-zA-Z0-9_-]+$/.test(pageName)) {
+        logger.error('页面名称只能包含字母、数字、下划线和中划线');
+        process.exit(1);
+    }
+
+    logger.step(2, '检查页面路径', '确认页面是否已存在');
+
+    // 获取项目路径
+    const projectPath = path.resolve(__dirname, '../miniprogram');
+    const pagePath = path.join(projectPath, 'pages', pageName);
+
+    // 检查页面是否已存在
+    if (fs.existsSync(pagePath)) {
+        logger.error(`页面已存在: pages/${pageName}`);
+        process.exit(1);
+    }
+
+    logger.step(3, '创建页面文件', '生成页面所需的四个文件');
+
+    try {
+        // 创建页面目录
+        fs.mkdirSync(pagePath, { recursive: true });
+        logger.info(`创建目录: pages/${pageName}`);
+
+        // 模板内容
+        const templates = {
+            ts: `Page({
+
+  // 页面的初始数据
+  data: {
+
+  },
+
+  // 生命周期函数--监听页面加载
+  onLoad: function (options) {
+
+  },
+
+  // 生命周期函数--监听页面初次渲染完成
+  onReady: function () {
+
+  },
+
+  // 生命周期函数--监听页面显示
+  onShow: function () {
+
+  },
+
+  // 生命周期函数--监听页面隐藏
+  onHide: function () {
+
+  },
+
+  // 生命周期函数--监听页面卸载
+  onUnload: function () {
+
+  },
+
+  // 页面相关事件处理函数--监听用户下拉动作
+  onPullDownRefresh: function () {
+
+  },
+
+  // 页面上拉触底事件的处理函数
+  onReachBottom: function () {
+
+  },
+
+  // 用户点击右上角分享
+  onShareAppMessage: function () {
+
+  }
+});`,
+            json: `{
+  "usingComponents": {}
+}`,
+            wxml: `<text>pages/${pageName}/${pageName}.wxml</text>`,
+            scss: `.${pageName} {}`
+        };
+
+        // 创建文件
+        const files = ['ts', 'json', 'wxml', 'scss'];
+        files.forEach(ext => {
+            const filePath = path.join(pagePath, `${pageName}.${ext}`);
+            fs.writeFileSync(filePath, templates[ext], 'utf8');
+            logger.success(`创建文件: pages/${pageName}/${pageName}.${ext}`);
+        });
+
+        logger.step(4, '更新配置文件', '在 app.json 中注册新页面');
+
+        // 更新 app.json
+        const appJsonPath = path.join(projectPath, 'app.json');
+        const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
+
+        // 添加新页面路径
+        const newPagePath = `pages/${pageName}/${pageName}`;
+        if (!appJson.pages.includes(newPagePath)) {
+            appJson.pages.push(newPagePath);
+            fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, '\t'), 'utf8');
+            logger.success(`页面路径已添加到 app.json: ${newPagePath}`);
+        } else {
+            logger.warn(`页面路径已存在于 app.json: ${newPagePath}`);
+        }
+
+        logger.separator();
+
+        // 显示创建结果
+        const resultInfo = {
+            '页面名称': pageName,
+            '页面路径': `pages/${pageName}`,
+            '创建时间': new Date().toLocaleString('zh-CN'),
+            '文件数量': '4 个文件 (ts, json, wxml, scss)'
+        };
+
+        logger.result('页面创建成功', resultInfo);
+        logger.info('你可以在微信开发者工具中查看并编辑新创建的页面');
+        logger.separator();
+
+        return {
+            pageName,
+            pagePath,
+            files: files.map(ext => `${pageName}.${ext}`)
+        };
+
+    } catch (error) {
+        logger.separator();
+        logger.error('创建页面失败', error.message);
+
+        // 清理已创建的文件
+        if (fs.existsSync(pagePath)) {
+            try {
+                fs.rmSync(pagePath, { recursive: true, force: true });
+                logger.info('已清理创建的文件');
+            } catch (cleanupError) {
+                logger.warn('清理文件失败:', cleanupError.message);
+            }
+        }
+
+        logger.separator();
+        throw error;
+    }
+}
 
 // 构建npm功能
 async function buildNpm(options = {}) {
@@ -698,6 +855,12 @@ function parseArgs() {
     const command = args[0];
     const options = {};
 
+    // 对于 create-page 命令，第二个参数是页面名称
+    if (command === 'create-page') {
+        options.pageName = args[1];
+        return { command, options };
+    }
+
     for (let i = 1; i < args.length; i++) {
         const arg = args[i];
 
@@ -765,11 +928,15 @@ miniprogram-ci CLI 工具
   preview                预览小程序
   upload                 上传小程序
   build-npm              构建npm (对应开发者工具的构建npm功能)
+  create-page <name>     创建新页面 (自动生成ts/json/wxml/scss文件并更新app.json)
   help                   显示帮助信息
 
 通用选项:
   --interactive          启用交互模式 (默认启用)
   --no-interactive       禁用交互模式
+
+创建页面选项:
+  <name>                 页面名称 (必需，只能包含字母、数字、下划线和中划线)
 
 预览选项:
   --desc <string>        预览描述
@@ -802,6 +969,10 @@ miniprogram-ci CLI 工具
   DEBUG                 调试模式
 
 示例:
+  # 创建新页面
+  node cli/index.js create-page my-page
+  node cli/index.js create-page user-profile
+
   # 交互式预览小程序 (默认模式)
   node cli/index.js preview
 
@@ -867,6 +1038,10 @@ async function main() {
                 await buildNpm(options);
                 break;
 
+            case 'create-page':
+                await createPage(options.pageName, options);
+                break;
+
             case 'help':
             case '--help':
             case '-h':
@@ -897,6 +1072,7 @@ module.exports = {
     preview,
     upload,
     buildNpm,
+    createPage,
     loadConfig,
     createProject
 };

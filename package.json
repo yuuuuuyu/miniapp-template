@@ -6,6 +6,7 @@
         "preview": "node cli/index.js preview",
         "upload": "node cli/index.js upload",
         "build-npm": "node cli/index.js build-npm",
+        "create-page": "node cli/index.js create-page",
         "ci:help": "node cli/index.js help",
         "commit": "git add . && git-cz && git push",
         "prepare": "husky install",
