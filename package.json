@@ -43,8 +43,6 @@
         "typescript": "^5.8.3"
     },
     "dependencies": {
-        "@vant/weapp": "^1.11.6",
-        "ansi-styles": "^6.2.1",
-        "supports-color": "^10.0.0"
+        "@vant/weapp": "^1.11.6"
     }
 }
