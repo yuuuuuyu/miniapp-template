@@ -7,6 +7,7 @@
 - ✅ **预览功能**: 支持交互式和非交互式预览
 - ✅ **上传功能**: 自动版本管理，Git提交信息作为描述
 - ✅ **构建npm**: 对应开发者工具的构建npm功能
+- ✅ **页面管理**: 快速创建和删除小程序页面
 - ✅ **配置管理**: 灵活的配置文件支持
 - ✅ **环境支持**: 支持开发、测试、生产环境配置
 - ✨ **规范化日志**: 支持多种更新日志格式（简单/详细/变更日志）
@@ -25,6 +26,57 @@ npm install
 3. 配置IP白名单（推荐）
 
 ## 使用方法
+
+### 页面管理
+
+快速创建和删除小程序页面，自动生成页面文件并更新 `app.json` 配置。
+
+#### 创建页面
+
+创建一个新的小程序页面，会自动生成以下文件：
+- `xxx.ts` - 页面逻辑（包含完整的生命周期函数）
+- `xxx.json` - 页面配置
+- `xxx.wxml` - 页面模板
+- `xxx.scss` - 页面样式
+
+```bash
+# 使用npm脚本
+npm run create-page my-page
+
+# 直接使用CLI
+node cli/index.js create-page user-profile
+```
+
+执行后会：
+1. 在 `miniprogram/pages/` 下创建页面目录和文件
+2. 自动在 `app.json` 的 `pages` 数组���添加页面路径
+3. 显示创建结果和文件列表
+
+#### 删除页面
+
+删除指定的小程序页面，会自动清理相关文件并更新配置。
+
+```bash
+# 使用npm脚本（交互式确认）
+npm run delete-page my-page
+
+# 直接使用CLI（交互式确认）
+node cli/index.js delete-page user-profile
+
+# 强制删除，不需要确认
+node cli/index.js delete-page my-page --force
+node cli/index.js delete-page my-page -f
+```
+
+执行后会：
+1. 删除整个页面目录及所有文件
+2. 自动从 `app.json` 的 `pages` 数组中移除页面路径
+3. 显示删除结果和已删除的文件列表
+
+**注意事项：**
+- 页面名称只能包含字母、数字、下划线和中划线
+- 默认会要求确认删除操作，使用 `--force` 可跳过确认
+- 删除操作不可恢复，请谨慎操作
 
 ### 构建npm
 
@@ -131,6 +183,11 @@ npm run demo:changelog
 ### 通用选项
 - `--interactive` / `--no-interactive`: 启用/禁用交互模式
 - `--help`: 显示帮助信息
+
+### 页面管理选项
+- `create-page <name>`: 创建新页面（页面名称只能包含字母、数字、下划线和中划线）
+- `delete-page <name>`: 删除页面
+- `--force` / `-f`: 强制删除页面，不需要确认（仅用于 delete-page）
 
 ### 构建npm选项
 - `--ignores <patterns>`: 指定需要排除的规则（逗号分隔）
